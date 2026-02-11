@@ -2,7 +2,7 @@
 
 ## Objective
 
-Execute packaging and release work from the current shell implementation toward a distributable `claude-usage` product, culminating in `v0.1.0`.
+Execute packaging and release work from the current shell implementation toward a distributable `jevons` product, culminating in `v0.1.0`.
 
 ## Timeframe and Assumptions
 
@@ -54,7 +54,7 @@ Scope:
 - Add `doctor` and `doctor --fix` baseline checks.
 
 Deliverables:
-- Buildable Go CLI (`claude-usage`) with parity for core workflows.
+- Buildable Go CLI (`jevons`) with parity for core workflows.
 - `doctor` checks for:
   - `~/.claude/projects` readability
   - `~/.claude-usage` writability
@@ -82,9 +82,9 @@ Deliverables:
   - `linux/arm64`
 - Checksums file published with every release.
 - Automated smoke test execution:
-  - `claude-usage sync`
-  - `claude-usage web`
-  - `claude-usage status`
+  - `jevons sync`
+  - `jevons web`
+  - `jevons status`
 - Migration validation from prior data files.
 
 Exit criteria:
@@ -101,7 +101,7 @@ Scope:
 - Execute clean-machine install validation.
 
 Deliverables:
-- Homebrew install path: `brew install <tap>/claude-usage`
+- Homebrew install path: `brew install <tap>/jevons`
 - Documented install script path for macOS/Linux.
 - RC notes with known limitations and support matrix.
 

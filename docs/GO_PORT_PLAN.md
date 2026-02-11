@@ -9,19 +9,22 @@ Shell works for fast iteration, but Go gives:
 - stronger testability and typed parsing
 - cleaner background service control
 
-## Proposed Structure
+## Project Structure
 
 ```text
-cmd/claude-usage/
+cmd/jevons/
   main.go
 internal/
+  cli/
   sync/
   parser/
   store/
+  daemon/
   dashboard/
-  adapters/
 web/
   static assets (embedded)
+pkg/
+  model/
 ```
 
 ## Migration Milestones

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Ship `claude-usage` as a tool other developers can install quickly and run without setup friction.
+Ship `jevons` as a tool other developers can install quickly and run without setup friction.
 
 ## Packaging Principles
 
@@ -15,7 +15,7 @@ Ship `claude-usage` as a tool other developers can install quickly and run witho
 
 ### Primary
 
-- Homebrew tap (macOS): `brew install <tap>/claude-usage`
+- Homebrew tap (macOS): `brew install <tap>/jevons`
 
 ### Secondary
 
@@ -26,13 +26,13 @@ Ship `claude-usage` as a tool other developers can install quickly and run witho
 
 ### Command
 
-- `claude-usage doctor`
-- `claude-usage doctor --fix`
+- `jevons doctor`
+- `jevons doctor --fix`
 
 ### Doctor responsibilities
 
 - Verify access to `~/.claude/projects`
-- Verify writable data dir (`~/.claude-usage`)
+- Verify writable data dir (`~/.jevons`)
 - Verify browser-launch capability for dashboard auto-open
 - Verify optional adapters (MCP/scanners) and mark as optional
 
