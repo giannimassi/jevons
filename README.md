@@ -1,15 +1,16 @@
-# Claude Usage Monitor
+# Jevons
 
-Local usage monitor and dashboard for Claude session logs.
+Local AI usage monitor and dashboard. Reads session logs from AI coding tools (Claude, Codex, and others), aggregates token consumption into event stores, and serves an interactive HTML dashboard.
+
+Named after [Jevons paradox](https://en.wikipedia.org/wiki/Jevons_paradox) — as AI tools get more efficient, we use them more.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Current Implementation
 
-This repository currently contains a production-ready shell implementation:
+The tool currently ships as a shell implementation (`claude-usage-tracker.sh`) with a Go port in progress.
 
-- `claude-usage-tracker.sh`: sync daemon + dashboard server + CLI
-- `tests/claude-usage-ui-regression.sh`: UI regression script (agent-browser)
-
-## Quick Start
+### Shell (stable)
 
 ```bash
 # start dashboard + sync loop
@@ -22,16 +23,43 @@ This repository currently contains a production-ready shell implementation:
 ./claude-usage-tracker.sh status
 ```
 
-Dashboard URL:
+### Go (in development)
 
-- `http://127.0.0.1:8765/dashboard/index.html`
+```bash
+# build
+make build
+
+# run
+./bin/jevons web --port 8765 --interval 15
+./bin/jevons sync
+./bin/jevons status
+./bin/jevons doctor
+```
+
+Dashboard URL: `http://127.0.0.1:8765/dashboard/index.html`
+
+## Install
+
+### From source
+
+```bash
+git clone https://github.com/OWNER/jevons.git
+cd jevons
+make build
+```
+
+### Shell script (no Go required)
+
+```bash
+./claude-usage-tracker.sh web
+```
 
 ## Docs
 
-- `docs/CONVERSATION_AND_BUILD_SUMMARY_2026-02-11.md`
-- `docs/RELEASE_AND_PACKAGING_STRATEGY.md`
-- `docs/GO_PORT_PLAN.md`
+- [Go Port Plan](docs/GO_PORT_PLAN.md)
+- [Release & Packaging Strategy](docs/RELEASE_AND_PACKAGING_STRATEGY.md)
+- [Release Execution Plan](docs/RELEASE_EXECUTION_PLAN.md)
 
-## Notes
+## License
 
-The shell implementation is stable enough for daily use, but the long-term direction is a single-binary Go CLI that embeds the dashboard and offers better packaging/distribution.
+[MIT](LICENSE)

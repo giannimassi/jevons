@@ -2,3 +2,19 @@
 *.log
 *.tmp
 *.swp
+
+# Go build artifacts
+bin/
+dist/
+vendor/
+*.test
+*.out
+cover.out
+coverage.html
+
+# GoReleaser
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
