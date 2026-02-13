@@ -1,4 +1,4 @@
-.PHONY: help build test vet fmt clean test-shell lint-shell test-parity
+.PHONY: help build test vet fmt clean test-shell lint-shell test-parity test-smoke test-migration release-dry-run
 
 BINARY := jevons
 BUILD_DIR := bin
@@ -49,3 +49,14 @@ test-parity: build ## Compare Go sync output against shell sync output
 	@diff <(jq -S . /tmp/jevons-parity/shell/projects.json) <(jq -S . /tmp/jevons-parity/go/projects.json) && echo "  Projects match ✓" || echo "  Projects DIFFER ✗"
 	@echo "=== Done ==="
 	@rm -rf /tmp/jevons-parity
+
+test-smoke: build ## Run smoke tests against local build
+	@chmod +x tests/smoke-test.sh
+	./tests/smoke-test.sh ./bin/jevons
+
+test-migration: build ## Run migration validation (requires shell script + jq)
+	@chmod +x tests/migration-test.sh
+	./tests/migration-test.sh ./bin/jevons
+
+release-dry-run: ## Run GoReleaser locally (snapshot, no publish)
+	goreleaser release --snapshot --clean --skip=publish
