@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OWNER/jevons/pkg/model"
+	"github.com/giannimassi/jevons/pkg/model"
 )
 
 // TSV header for events.tsv

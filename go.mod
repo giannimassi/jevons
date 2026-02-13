@@ -1,4 +1,4 @@
-module github.com/OWNER/jevons
+module github.com/giannimassi/jevons
 
 go 1.25.4
 

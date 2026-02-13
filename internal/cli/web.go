@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/OWNER/jevons/pkg/model"
+	"github.com/giannimassi/jevons/pkg/model"
 	"github.com/spf13/cobra"
 )
 

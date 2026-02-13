@@ -1,6 +1,6 @@
 package main
 
-import "github.com/OWNER/jevons/internal/cli"
+import "github.com/giannimassi/jevons/internal/cli"
 
 var version = "dev"
 

@@ -43,7 +43,7 @@ Dashboard URL: `http://127.0.0.1:8765/dashboard/index.html`
 ### From source
 
 ```bash
-git clone https://github.com/OWNER/jevons.git
+git clone https://github.com/giannimassi/jevons.git
 cd jevons
 make build
 ```
