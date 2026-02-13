@@ -13,8 +13,7 @@ Jevons — a local AI usage monitor and dashboard that reads session logs from A
 ```bash
 make build                          # build binary to bin/jevons
 ./bin/jevons sync                   # one-shot sync
-./bin/jevons web --port 8765        # start dashboard
-./bin/jevons web-stop               # stop web server
+./bin/jevons web --port 8765        # start dashboard (Ctrl+C to stop)
 ./bin/jevons status                 # show status
 ./bin/jevons doctor                 # environment diagnostics
 ./bin/jevons total --range 24h      # CLI totals

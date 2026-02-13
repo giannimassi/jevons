@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-02-13
+
 ### Added
 - **Go CLI parity MVP** — full port of shell script to Go binary (`jevons`)
 - JSONL session log parser with state machine dedup (`internal/parser/`, 366 lines)
 - Sync pipeline: discover → parse → sort → dedupe → write TSV/JSON (`internal/sync/`, 323 lines)
 - Background sync daemon with heartbeat monitoring (`internal/daemon/`, 191 lines)
 - Embedded HTML dashboard via `go:embed` (`internal/dashboard/`)
-- CLI commands: `sync`, `web`, `web-stop`, `status`, `total`, `graph`, `doctor`
+- CLI commands: `sync`, `web`, `status`, `total`, `graph`, `doctor`
 - Atomic file writes for TSV output (write-to-temp + rename)
 - Rune-based prompt preview truncation (UTF-8 safe)
 - `make test-parity` target to validate Go vs shell output compatibility
@@ -32,3 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Embedded HTML dashboard with time-range selector, metric picker, scope tree, live prompt table
 - CLI commands: `sync`, `web`, `web-stop`, `status`, `total`, `graph`, `live`
 - UI regression test suite (`tests/claude-usage-ui-regression.sh`)
+
+[Unreleased]: https://github.com/giannimassi/jevons/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/giannimassi/jevons/releases/tag/v0.1.0

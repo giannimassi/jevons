@@ -29,8 +29,7 @@ Dashboard: `http://127.0.0.1:8765/dashboard/index.html`
 
 ```bash
 jevons sync                              # one-shot sync of session logs → TSV
-jevons web --port 8765 --interval 15     # start dashboard + background sync
-jevons web-stop                          # stop web server
+jevons web --port 8765 --interval 15     # start dashboard + background sync (Ctrl+C to stop)
 jevons status                            # show sync and web server health
 jevons total --range 24h                 # JSON token usage aggregation
 jevons graph --metric billable --range 7d # ASCII usage graph
