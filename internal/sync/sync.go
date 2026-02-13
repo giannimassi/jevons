@@ -179,6 +179,15 @@ func dedupLiveEvents(events []model.LiveEvent) []model.LiveEvent {
 	return result
 }
 
+// atomicWriteFile writes data to a temp file then renames atomically (matching shell behavior).
+func atomicWriteFile(path string, data []byte) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
 func writeEventsTSV(path string, events []model.TokenEvent) error {
 	var b strings.Builder
 	b.WriteString(store.EventsTSVHeader)
@@ -187,7 +196,7 @@ func writeEventsTSV(path string, events []model.TokenEvent) error {
 		b.WriteString(store.MarshalTokenEvent(e))
 		b.WriteByte('\n')
 	}
-	return os.WriteFile(path, []byte(b.String()), 0644)
+	return atomicWriteFile(path, []byte(b.String()))
 }
 
 func writeLiveEventsTSV(path string, events []model.LiveEvent) error {
@@ -198,7 +207,7 @@ func writeLiveEventsTSV(path string, events []model.LiveEvent) error {
 		b.WriteString(store.MarshalLiveEvent(e))
 		b.WriteByte('\n')
 	}
-	return os.WriteFile(path, []byte(b.String()), 0644)
+	return atomicWriteFile(path, []byte(b.String()))
 }
 
 func writeProjectsJSON(path string, entries []projectEntry) error {

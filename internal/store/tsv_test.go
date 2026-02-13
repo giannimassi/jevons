@@ -78,6 +78,15 @@ func TestUnmarshalTokenEventErrors(t *testing.T) {
 	}
 }
 
+// Issue 5: >12 fields parses successfully (ignores extra fields, matching shell awk behavior)
+func TestUnmarshalTokenEventExtraFields(t *testing.T) {
+	line := "1736937000\t2025-01-15T10:30:00Z\ttest\ts1\t100\t50\t20\t10\t150\t180\ttext\tsig\textra_field"
+	event, err := UnmarshalTokenEvent(line)
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), event.Input)
+	assert.Equal(t, "sig", event.Signature)
+}
+
 func TestMarshalLiveEvent(t *testing.T) {
 	e := model.LiveEvent{
 		TokenEvent: model.TokenEvent{

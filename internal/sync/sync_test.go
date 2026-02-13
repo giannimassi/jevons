@@ -221,3 +221,21 @@ func TestSyncEmptySource(t *testing.T) {
 	assert.Equal(t, 0, result.SessionFiles)
 	assert.Equal(t, 0, result.EventRows)
 }
+
+// Issue 12: Non-.jsonl files are ignored by sync discovery
+func TestSyncIgnoresNonJSONL(t *testing.T) {
+	tmpDir := t.TempDir()
+	sourceDir := filepath.Join(tmpDir, "source")
+	dataDir := filepath.Join(tmpDir, "data")
+
+	// Create a project dir with a non-.jsonl file
+	projectDir := filepath.Join(sourceDir, "test-project")
+	require.NoError(t, os.MkdirAll(projectDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, "session.txt"), []byte("not jsonl"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, "notes.md"), []byte("# notes"), 0644))
+
+	cfg := model.Config{DataRoot: dataDir, SourceDir: sourceDir}
+	result, err := Run(cfg)
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.SessionFiles, "non-.jsonl files should be ignored")
+}

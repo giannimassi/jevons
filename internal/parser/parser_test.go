@@ -103,6 +103,21 @@ func TestParseSessionFile(t *testing.T) {
 				assert.NotEqual(t, events[0].TSISO, events[1].TSISO)
 			},
 		},
+		// Issue 2: Triple consecutive dedup — only first emitted, rest skipped
+		{
+			name:      "triple consecutive dedup skips all but first",
+			fixture:   "triple_dedup_session.jsonl",
+			slug:      "triple",
+			sessionID: "session-triple",
+			wantCount: 2,
+			checkEvents: func(t *testing.T, events []TokenEventResult) {
+				// First: emitted (after human prompt)
+				assert.Equal(t, "100|50|20|10", events[0].Signature)
+				// B and C with same sig → SKIPPED
+				// D with different sig → emitted
+				assert.Equal(t, "200|75|0|0", events[1].Signature)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -356,6 +371,12 @@ func TestPromptPreview(t *testing.T) {
 			name: "179 chars not truncated",
 			raw:  `"` + strings.Repeat("c", 179) + `"`,
 			want: strings.Repeat("c", 179),
+		},
+		// C10/Issue10: Multi-byte UTF-8 truncation (rune-based, not byte-based)
+		{
+			name: "emoji prompt truncated at rune boundary",
+			raw:  `"` + strings.Repeat("\U0001F680", 181) + `"`, // 181 rocket emoji (4 bytes each)
+			want: strings.Repeat("\U0001F680", 177) + "...",
 		},
 	}
 

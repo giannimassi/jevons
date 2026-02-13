@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/giannimassi/jevons/pkg/model"
 )
@@ -320,8 +321,9 @@ func promptPreview(raw json.RawMessage) string {
 	if cleaned == "" {
 		return "-"
 	}
-	if len(cleaned) > 180 {
-		return cleaned[:177] + "..."
+	if utf8.RuneCountInString(cleaned) > 180 {
+		runes := []rune(cleaned)
+		return string(runes[:177]) + "..."
 	}
 	return cleaned
 }
