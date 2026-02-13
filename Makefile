@@ -1,4 +1,4 @@
-.PHONY: help build test vet fmt clean test-shell lint-shell
+.PHONY: help build test vet fmt clean test-shell lint-shell test-parity
 
 BINARY := jevons
 BUILD_DIR := bin
@@ -27,3 +27,25 @@ test-shell: ## Run shell UI regression tests
 
 lint-shell: ## Lint shell scripts with shellcheck
 	shellcheck claude-usage-tracker.sh
+
+test-parity: build ## Compare Go sync output against shell sync output
+	@echo "=== Running shell sync ==="
+	@mkdir -p /tmp/jevons-parity/shell /tmp/jevons-parity/go
+	CLAUDE_USAGE_DATA_DIR=/tmp/jevons-parity/shell ./claude-usage-tracker.sh sync
+	@echo "=== Running Go sync ==="
+	CLAUDE_USAGE_DATA_DIR=/tmp/jevons-parity/go ./$(BUILD_DIR)/$(BINARY) sync
+	@echo "=== Comparing events.tsv headers ==="
+	@head -1 /tmp/jevons-parity/shell/events.tsv > /tmp/jevons-parity/shell-header.txt
+	@head -1 /tmp/jevons-parity/go/events.tsv > /tmp/jevons-parity/go-header.txt
+	@diff /tmp/jevons-parity/shell-header.txt /tmp/jevons-parity/go-header.txt && echo "  Headers match ✓" || echo "  Headers DIFFER ✗"
+	@echo "=== Comparing event counts ==="
+	@echo "  Shell events: $$(wc -l < /tmp/jevons-parity/shell/events.tsv)"
+	@echo "  Go events:    $$(wc -l < /tmp/jevons-parity/go/events.tsv)"
+	@echo "=== Comparing live-events.tsv headers ==="
+	@head -1 /tmp/jevons-parity/shell/live-events.tsv > /tmp/jevons-parity/shell-live-header.txt
+	@head -1 /tmp/jevons-parity/go/live-events.tsv > /tmp/jevons-parity/go-live-header.txt
+	@diff /tmp/jevons-parity/shell-live-header.txt /tmp/jevons-parity/go-live-header.txt && echo "  Headers match ✓" || echo "  Headers DIFFER ✗"
+	@echo "=== Comparing projects.json ==="
+	@diff <(jq -S . /tmp/jevons-parity/shell/projects.json) <(jq -S . /tmp/jevons-parity/go/projects.json) && echo "  Projects match ✓" || echo "  Projects DIFFER ✗"
+	@echo "=== Done ==="
+	@rm -rf /tmp/jevons-parity
