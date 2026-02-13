@@ -33,7 +33,7 @@ Before cutting the first release, ensure:
    - `jevons web` (verify dashboard loads)
    - `jevons status`
    - `jevons doctor`
-10. Update Homebrew tap formula (if applicable)
+10. Verify Homebrew formula was updated automatically (check `giannimassi/homebrew-jevons` for new commit from GoReleaser)
 
 ## Version Injection
 

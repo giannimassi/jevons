@@ -274,3 +274,25 @@ Critic noted CHANGELOG v0.1.0 has 14 items under "Added" and 5 items under "Shel
 ---
 
 _Note: See `critic-2-findings.md` for additional lower-priority challenges from the initial review. All critical/high-priority findings have been normalized and addressed above._
+
+---
+
+## Challenge 27: Homebrew tap repository does not exist (Critic Iteration 4)
+**Status:** ADDRESSED
+**Track:** T2 (Distribution)
+**Severity:** MEDIUM (documented prerequisite, not a code/config gap)
+
+Critic verified that `giannimassi/homebrew-jevons` returns HTTP 404. GoReleaser will fail to push the formula if the repo doesn't exist at release time.
+
+**Resolution:** This is explicitly documented in `RELEASING.md` "Prerequisites (First Release Only)" section, item 1: "Repository `giannimassi/homebrew-jevons` exists and is public." The tap repo creation is a manual infrastructure step the user performs before the first release — it's not automatable from this codebase. The code, config, docs, and tests are all correct and ready. The user must create the repo and configure the `HOMEBREW_TAP_TOKEN` secret as documented.
+
+Additionally, RELEASING.md step 10 was clarified from "Update Homebrew tap formula (if applicable)" to "Verify Homebrew formula was updated automatically (check `giannimassi/homebrew-jevons` for new commit from GoReleaser)" — addressing the minor ambiguity noted by the critic.
+
+---
+
+## Critic Iteration 4 — Final Release Readiness Review
+**Date:** 2026-02-13
+**Verdict:** RELEASE-READY (pending documented infrastructure prerequisites)
+**Reviewer focus:** Release-day simulation, first-user experience, failure modes
+
+**Summary:** Walked through RELEASING.md step by step. All code, config, CI/CD, tests, and documentation are correct. The only prerequisite is infrastructure setup (create tap repo + configure secret), which is explicitly documented. All 26 prior challenges verified as genuinely ADDRESSED. Release pipeline validated: `make release-dry-run` produces 4 binaries, 4 archives, checksums, and Homebrew formula. Version injection works. First-time user experience is solid. No CRITICAL or HIGH issues found in code or docs.
