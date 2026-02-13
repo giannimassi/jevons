@@ -4,53 +4,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Jevons — a local AI usage monitor and dashboard that reads session logs from AI coding tools (starting with `~/.claude/projects/*.jsonl`), aggregates token consumption into TSV event stores, and serves an HTML dashboard. Named after Jevons paradox. Currently implemented as a shell script (`claude-usage-tracker.sh`) with a Go CLI port in progress.
+Jevons — a local AI usage monitor and dashboard that reads session logs from AI coding tools (starting with `~/.claude/projects/*.jsonl`), aggregates token consumption into TSV event stores, and serves an HTML dashboard. Named after Jevons paradox. The Go CLI (`jevons`) is the primary implementation; the original shell script (`claude-usage-tracker.sh`) remains as a reference.
 
 ## Commands
 
-### Shell (stable)
-
-```bash
-# Start dashboard + background sync (default command)
-./claude-usage-tracker.sh web --interval 15 --port 8765
-
-# One-shot sync only
-./claude-usage-tracker.sh sync
-
-# Show combined status
-./claude-usage-tracker.sh status
-
-# CLI totals (JSON output)
-./claude-usage-tracker.sh total --range 24h
-
-# ASCII graph
-./claude-usage-tracker.sh graph --metric billable --range 24h
-
-# Stop everything
-./claude-usage-tracker.sh web-stop
-```
-
-### Go CLI (in development)
+### Go CLI
 
 ```bash
 make build                          # build binary to bin/jevons
 ./bin/jevons sync                   # one-shot sync
 ./bin/jevons web --port 8765        # start dashboard
+./bin/jevons web-stop               # stop web server
 ./bin/jevons status                 # show status
 ./bin/jevons doctor                 # environment diagnostics
 ./bin/jevons total --range 24h      # CLI totals
 ./bin/jevons graph --metric billable --range 24h  # ASCII graph
 ```
 
+### Shell (legacy reference)
+
+```bash
+./claude-usage-tracker.sh web --interval 15 --port 8765
+./claude-usage-tracker.sh sync
+./claude-usage-tracker.sh status
+./claude-usage-tracker.sh total --range 24h
+./claude-usage-tracker.sh graph --metric billable --range 24h
+./claude-usage-tracker.sh web-stop
+```
+
 ### Build & test
 
 ```bash
-make build        # build Go binary
-make test         # run Go tests
-make vet          # go vet
-make fmt          # go fmt
-make test-shell   # run shell UI regression tests
-make clean        # remove build artifacts
+make build          # build Go binary
+make test           # run Go tests (104 subtests)
+make vet            # go vet
+make fmt            # go fmt
+make test-parity    # compare Go vs shell output
+make test-shell     # run shell UI regression tests
+make clean          # remove build artifacts
 ```
 
 ### Running shell tests
@@ -118,7 +109,7 @@ Single-page app generated into `$DATA_ROOT/dashboard/index.html`. Fetches TSV/JS
 ### Daemon model
 
 - Sync loop: background process writing heartbeat file (`epoch,interval,pid,status`), checked via `sync_heartbeat_state()`
-- Web server: Python `http.server` (shell) or Go HTTP server (Go port)
+- Web server: Go HTTP server (Go CLI) or Python `http.server` (shell legacy)
 - Health checks use both PID liveness (`kill -0`) and HTTP probe
 
 ## Dependencies

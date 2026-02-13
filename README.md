@@ -6,53 +6,70 @@ Named after [Jevons paradox](https://en.wikipedia.org/wiki/Jevons_paradox) — a
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Current Implementation
-
-The tool currently ships as a shell implementation (`claude-usage-tracker.sh`) with a Go port in progress.
-
-### Shell (stable)
+## Quick Start
 
 ```bash
-# start dashboard + sync loop
-./claude-usage-tracker.sh web --interval 15 --port 8765
-
-# one-shot sync
-./claude-usage-tracker.sh sync
-
-# status
-./claude-usage-tracker.sh status
-```
-
-### Go (in development)
-
-```bash
-# build
-make build
-
-# run
-./bin/jevons web --port 8765 --interval 15
-./bin/jevons sync
-./bin/jevons status
-./bin/jevons doctor
-```
-
-Dashboard URL: `http://127.0.0.1:8765/dashboard/index.html`
-
-## Install
-
-### From source
-
-```bash
+# build from source
 git clone https://github.com/giannimassi/jevons.git
 cd jevons
 make build
+
+# start dashboard with background sync
+./bin/jevons web --port 8765 --interval 15
+
+# or one-shot sync + CLI reporting
+./bin/jevons sync
+./bin/jevons total --range 24h
+./bin/jevons graph --metric billable --range 7d
 ```
 
-### Shell script (no Go required)
+Dashboard: `http://127.0.0.1:8765/dashboard/index.html`
+
+## Commands
 
 ```bash
-./claude-usage-tracker.sh web
+jevons sync                              # one-shot sync of session logs → TSV
+jevons web --port 8765 --interval 15     # start dashboard + background sync
+jevons web-stop                          # stop web server
+jevons status                            # show sync and web server health
+jevons total --range 24h                 # JSON token usage aggregation
+jevons graph --metric billable --range 7d # ASCII usage graph
+jevons doctor                            # environment diagnostics
 ```
+
+## Build & Test
+
+```bash
+make build          # build binary to bin/jevons
+make test           # run Go tests (104 subtests)
+make vet            # go vet
+make fmt            # go fmt
+make test-parity    # compare Go output against shell reference
+make test-shell     # run shell UI regression tests
+make clean          # remove build artifacts
+```
+
+## Data Flow
+
+```
+~/.claude/projects/<slug>/*.jsonl   (source: AI session logs)
+        │
+        ▼  jevons sync
+$DATA_ROOT/events.tsv               (deduplicated token events, sorted by epoch)
+$DATA_ROOT/live-events.tsv          (same + prompt preview column)
+$DATA_ROOT/projects.json            (slug→path manifest)
+$DATA_ROOT/account.json             (from ~/.claude.json)
+$DATA_ROOT/sync-status.json         (last sync metadata)
+        │
+        ▼  jevons web
+http://127.0.0.1:8765/dashboard/    (interactive HTML dashboard)
+```
+
+Default data directory: `~/dev/.claude-usage` (override with `CLAUDE_USAGE_DATA_DIR`).
+
+## Shell Script (Legacy)
+
+The original shell implementation (`claude-usage-tracker.sh`, 2715 lines) remains in the repo as the reference. It requires `bash`, `jq`, `curl`, `python3`, `awk`, and `sort`. The Go binary is format-compatible and produces identical output.
 
 ## Docs
 

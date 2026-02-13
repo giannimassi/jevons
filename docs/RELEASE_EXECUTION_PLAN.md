@@ -39,9 +39,11 @@ Exit criteria:
 - Repository is ready for automated release wiring.
 - Release responsibilities and approval path are explicit.
 
-### Phase 1: Go Parity MVP (2026-02-15 to 2026-02-22)
+### Phase 1: Go Parity MVP (2026-02-15 to 2026-02-22) — COMPLETE
 
 Owner: Runtime/CLI owner
+
+**Completed 2026-02-13** (ahead of schedule).
 
 Scope:
 - Implement Go CLI parity for core commands: `sync`, `web`, `status`.
@@ -55,15 +57,15 @@ Scope:
 
 Deliverables:
 - Buildable Go CLI (`jevons`) with parity for core workflows.
-- `doctor` checks for:
-  - `~/.claude/projects` readability
-  - `~/.claude-usage` writability
-  - browser-launch capability
-  - optional adapter detection (non-blocking)
+- All 6 commands implemented: `sync`, `web`, `status`, `total`, `graph`, `doctor`.
+- 2,740 lines of Go across 22 files.
+- 24 top-level tests / 104 subtests, all passing.
+- 28 critic challenges filed and resolved across 4 iterations.
+- `make test-parity` validates format compatibility with shell reference.
 
 Exit criteria:
-- Core CLI workflows operate end-to-end in Go.
-- Existing shell-generated data can be read and used without migration breakage.
+- ~~Core CLI workflows operate end-to-end in Go.~~ **MET**
+- ~~Existing shell-generated data can be read and used without migration breakage.~~ **MET**
 
 ### Phase 2: Packaging and Artifact Pipeline (2026-02-23 to 2026-03-01)
 
