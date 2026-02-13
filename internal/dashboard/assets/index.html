@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Claude Usage Monitor</title>
+  <style>
+    :root {
+      --bg: #f4f2ea;
+      --bg2: #e8f1f7;
+      --bg3: #ecf8ff;
+      --ink: #1a2233;
+      --muted: #56647d;
+      --card: #ffffff;
+      --border: #d7e0ec;
+      --accent: #0f766e;
+      --accent2: #c2410c;
+      --accent3: #1d4ed8;
+      --ok: #0f766e;
+      --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 10% 4%, #fff4cf 0%, transparent 38%),
+        radial-gradient(circle at 92% 8%, #d8efff 0%, transparent 44%),
+        linear-gradient(165deg, var(--bg) 0%, var(--bg2) 62%, var(--bg3) 100%);
+      color: var(--ink);
+      font-family: "Space Grotesk", "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+      animation: bgDrift 18s ease-in-out infinite alternate;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(rgba(25, 44, 74, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25, 44, 74, 0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+      animation: gridFloat 26s linear infinite;
+      z-index: 0;
+    }
+    @keyframes bgDrift {
+      from { background-position: 0 0, 0 0, 0 0; }
+      to { background-position: 22px -12px, -24px 10px, 0 0; }
+    }
+    @keyframes gridFloat {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-32px, -18px, 0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .wrap { max-width: 1460px; margin: 0 auto; padding: 16px; position: relative; z-index: 1; }
+    .topbar {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: -0.03em;
+      background: linear-gradient(130deg, #111827 0%, #123254 46%, #0f766e 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+    .subtitle { margin-top: 4px; color: var(--muted); font-size: 14px; }
+    .acct-wrap { position: relative; }
+    .acct-btn {
+      border: 1px solid #bfd6ee;
+      background: #ffffff;
+      color: #16324b;
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+    }
+    .acct-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(19, 39, 67, 0.16); }
+    .acct-box {
+      position: absolute;
+      right: 0;
+      top: 42px;
+      width: 320px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 14px 30px rgba(25, 38, 61, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity .16s ease, transform .16s ease;
+      z-index: 40;
+      font-size: 13px;
+    }
+    .acct-wrap.open .acct-box {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .acct-title { font-weight: 700; margin-bottom: 6px; }
+    .acct-kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 8px; }
+    .acct-k { color: var(--muted); }
+    .toolbar {
+      margin-top: 12px;
+      background: color-mix(in srgb, var(--card) 92%, #f2f8ff 8%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(110px, 1fr));
+      gap: 8px;
+      align-items: end;
+      box-shadow: 0 8px 22px rgba(18, 42, 76, 0.08);
+    }
+    .toolbar label { font-size: 12px; color: var(--muted); display: block; font-weight: 600; }
+    select, input, button {
+      width: 100%;
+      margin-top: 5px;
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 9px;
+      border: 1px solid #c8d4e5;
+      background: #fff;
+      color: var(--ink);
+    }
+    button {
+      border: 0;
+      background: linear-gradient(135deg, #0f2035, #0f766e);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 9px 18px rgba(15, 32, 53, 0.24); filter: brightness(1.03); }
+    .status {
+      margin-top: 10px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .scope-hint {
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: color-mix(in srgb, #fff 90%, #f4faff 10%);
+      border: 1px solid #cddcf0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #314560;
+    }
+    .scope-hint.show { display: flex; }
+    .scope-hint .label { font-weight: 600; }
+    .scope-hint button {
+      width: auto;
+      margin-top: 0;
+      padding: 5px 9px;
+      font-size: 12px;
+      border-radius: 8px;
+      background: linear-gradient(140deg, #12324f, #0f766e);
+    }
+    .pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .pill.ok { color: var(--ok); border-color: #9bd7c8; }
+    .pill.bad { color: var(--bad); border-color: #efb8b8; }
+    .layout {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 12px;
+      min-height: 70vh;
+    }
+    .scope-panel {
+      background: color-mix(in srgb, var(--card) 90%, #f2f8ff 10%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
+      animation: fadeUp .28s ease both;
+      box-shadow: 0 10px 26px rgba(18, 42, 76, 0.10);
+    }
+    .scope-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .scope-title {
+      margin: 0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+    }
+    .scope-tree {
+      overflow: auto;
+      max-height: calc(100vh - 270px);
+      border: 1px solid #e5ebf4;
+      border-radius: 10px;
+      padding: 6px;
+      background: #fcfdff;
+    }
+    .scope-head button {
+      width: auto;
+      margin-top: 0;
+      border: 1px solid #c6d8ec;
+      background: linear-gradient(145deg, #12324f, #0f766e);
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 9px;
+    }
+    .scope-head button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+      filter: grayscale(0.25);
+    }
+    .tree-node details { margin-left: 4px; }
+    .tree-node summary { list-style: none; cursor: default; }
+    .tree-node summary::-webkit-details-marker { display: none; }
+    .tree-node summary::before {
+      content: "▸";
+      display: inline-block;
+      width: 10px;
+      margin-right: 6px;
+      color: #5f728f;
+      font-size: 11px;
+      transform-origin: 45% 50%;
+      transition: transform .12s ease;
+      vertical-align: middle;
+    }
+    .tree-node details[open] > summary::before {
+      transform: rotate(90deg);
+    }
+    .tree-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 2px 0;
+    }
+    .scope-btn {
+      border: 0;
+      background: transparent;
+      color: #1f2a3f;
+      text-align: left;
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    .scope-btn:hover { background: #eef4fb; }
+    .scope-btn.active { background: #dff1ee; color: #0c5d57; font-weight: 700; }
+    .scope-total { color: #445770; font-size: 12px; white-space: nowrap; }
+    .main {
+      min-width: 0;
+    }
+    .cards {
+      margin-top: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .card {
+      background: color-mix(in srgb, var(--card) 94%, #f1f7ff 6%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      transition: transform .14s ease, box-shadow .14s ease;
+      animation: fadeUp .26s ease both;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(25, 38, 61, 0.12); }
+    .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    .v {
+      margin-top: 3px;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    }
+    .grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 12px;
+    }
+    .panel {
+      background: color-mix(in srgb, var(--card) 94%, #f4f9ff 6%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      animation: fadeUp .32s ease both;
+      box-shadow: 0 10px 24px rgba(17, 37, 64, 0.08);
+    }
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+    }
+    .chart-wrap { position: relative; }
+    canvas { width: 100%; height: 290px; display: block; cursor: crosshair; }
+    .tip {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(10px, -100%);
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: nowrap;
+      box-shadow: 0 10px 26px rgba(0,0,0,.25);
+      z-index: 10;
+      transition: opacity .08s linear;
+    }
+    .live-wrap {
+      margin-top: 10px;
+      max-height: 420px;
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 7px 8px; border-bottom: 1px solid #edf1f7; text-align: left; }
+    th { position: sticky; top: 0; background: #f9fbff; z-index: 2; color: #4c5a73; }
+    tr:nth-child(2n) { background: #fbfdff; }
+    td.prompt {
+      max-width: 520px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meta { margin-top: 8px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1040px) {
+      .toolbar { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
+      .scope-tree { max-height: 300px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .wrap { padding: 10px; }
+      h1 { font-size: 24px; }
+      .toolbar { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      canvas { height: 230px; }
+      .acct-box { width: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Claude Usage Monitor</h1>
+        <div class="subtitle" id="subtitle">Live token consumption and prompt flow from Claude session logs</div>
+      </div>
+      <div class="acct-wrap" id="acctWrap">
+        <button class="acct-btn" id="acctBtn">Account</button>
+        <div class="acct-box" id="acctBox"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <label>Range
+        <select id="range">
+          <option value="1h">Last 1h</option>
+          <option value="30h" selected>Last 30h</option>
+          <option value="3h">Last 3h</option>
+          <option value="6h">Last 6h</option>
+          <option value="12h">Last 12h</option>
+          <option value="24h">Last 24h</option>
+          <option value="48h">Last 48h</option>
+          <option value="7d">Last 7d</option>
+          <option value="14d">Last 14d</option>
+          <option value="30d">Last 30d</option>
+          <option value="all">All Time</option>
+        </select>
+      </label>
+
+      <label>Bucket
+        <select id="bucket">
+          <option value="auto" selected>Auto</option>
+          <option value="60">1m</option>
+          <option value="300">5m</option>
+          <option value="900">15m</option>
+          <option value="3600">1h</option>
+          <option value="21600">6h</option>
+          <option value="86400">1d</option>
+        </select>
+      </label>
+
+      <label>Graph Mode
+        <select id="graphMode">
+          <option value="single" selected>Single Metric</option>
+          <option value="in_out">Stacked In vs Out</option>
+          <option value="cached_non_cached">Stacked Cached vs Non-Cached</option>
+          <option value="cache_parts">Stacked Cache Read vs Create</option>
+        </select>
+      </label>
+
+      <label>Metric (Single)
+        <select id="metric">
+          <option value="billable" selected>billable</option>
+          <option value="input">input</option>
+          <option value="output">output</option>
+          <option value="cache_read">cache_read</option>
+          <option value="cache_create">cache_create</option>
+          <option value="total_with_cache">total_with_cache</option>
+        </select>
+      </label>
+
+      <label>Visualization
+        <select id="viz">
+          <option value="bar" selected>bar</option>
+          <option value="line">line</option>
+          <option value="area">area</option>
+        </select>
+      </label>
+
+      <label>Live Window
+        <select id="liveWindow">
+          <option value="30m" selected>Last 30m</option>
+          <option value="1h">Last 1h</option>
+          <option value="3h">Last 3h</option>
+          <option value="6h">Last 6h</option>
+        </select>
+      </label>
+
+      <label>Jump To Timestamp
+        <input id="focusTs" type="datetime-local" />
+      </label>
+
+      <div>
+        <button id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+
+    <div class="status" id="statusRow"></div>
+    <div class="scope-hint" id="scopeHint"></div>
+
+    <div class="layout">
+      <aside class="scope-panel">
+        <div class="scope-head">
+          <h2 class="scope-title">Directory Scope</h2>
+          <div style="display:flex; gap:6px;">
+            <button id="currentScopeBtn" type="button">Current</button>
+            <button id="allScopeBtn" type="button">All</button>
+          </div>
+        </div>
+        <label style="font-size:12px; color:var(--muted);">
+          Search
+          <input id="scopeSearch" type="text" placeholder="Filter directories or repos" />
+        </label>
+        <div class="scope-tree tree-node" id="scopeTree"></div>
+      </aside>
+
+      <main class="main">
+        <div class="cards" id="cards"></div>
+
+        <div class="grid">
+          <div class="panel">
+            <h2 id="mainTitle">Token Flow</h2>
+            <div class="chart-wrap">
+              <canvas id="mainChart" width="1100" height="320"></canvas>
+              <div class="tip" id="mainTip"></div>
+            </div>
+            <div class="meta" id="mainMeta"></div>
+          </div>
+
+          <div class="panel">
+            <h2>Daily Billable (Last 30 Days)</h2>
+            <div class="chart-wrap">
+              <canvas id="dailyChart" width="480" height="320"></canvas>
+              <div class="tip" id="dailyTip"></div>
+            </div>
+            <div class="meta" id="dailyMeta"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px;">
+          <h2 id="liveTitle">Live Prompt Consumption</h2>
+          <div class="live-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Project</th>
+                  <th>Prompt Preview</th>
+                  <th>Input</th>
+                  <th>Output</th>
+                  <th>Billable</th>
+                  <th>Cached</th>
+                </tr>
+              </thead>
+              <tbody id="liveBody"></tbody>
+            </table>
+          </div>
+          <div class="meta" id="liveMeta"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const state = {
+    projects: [],
+    events: [],
+    liveEvents: [],
+    syncStatus: null,
+    account: null,
+    uiContext: null,
+    scopeHydrated: false,
+    scope: { kind: 'all', value: '__all__' },
+    treeOpenPaths: new Set(),
+    projectBySlug: new Map(),
+    focusEpoch: null,
+    chartStore: new Map(),
+  };
+
+  const rangeEl = document.getElementById('range');
+  const bucketEl = document.getElementById('bucket');
+  const metricEl = document.getElementById('metric');
+  const graphModeEl = document.getElementById('graphMode');
+  const vizEl = document.getElementById('viz');
+  const liveWindowEl = document.getElementById('liveWindow');
+  const focusEl = document.getElementById('focusTs');
+  const statusRowEl = document.getElementById('statusRow');
+  const scopeHintEl = document.getElementById('scopeHint');
+  const subtitleEl = document.getElementById('subtitle');
+  const scopeTreeEl = document.getElementById('scopeTree');
+  const scopeSearchEl = document.getElementById('scopeSearch');
+  const currentScopeBtnEl = document.getElementById('currentScopeBtn');
+  const allScopeBtnEl = document.getElementById('allScopeBtn');
+  const liveBodyEl = document.getElementById('liveBody');
+  const liveMetaEl = document.getElementById('liveMeta');
+  const liveTitleEl = document.getElementById('liveTitle');
+  const cardsEl = document.getElementById('cards');
+  const mainMetaEl = document.getElementById('mainMeta');
+  const dailyMetaEl = document.getElementById('dailyMeta');
+  const mainTitleEl = document.getElementById('mainTitle');
+  const acctWrapEl = document.getElementById('acctWrap');
+  const acctBoxEl = document.getElementById('acctBox');
+  const acctBtnEl = document.getElementById('acctBtn');
+
+  const rangeToSec = {
+    '1h': 3600,
+    '3h': 10800,
+    '6h': 21600,
+    '12h': 43200,
+    '24h': 86400,
+    '30h': 108000,
+    '48h': 172800,
+    '7d': 604800,
+    '14d': 1209600,
+    '30d': 2592000,
+    'all': 0,
+  };
+  const liveWindowToSec = {
+    '30m': 1800,
+    '1h': 3600,
+    '3h': 10800,
+    '6h': 21600,
+  };
+  const SCOPE_STORAGE_KEY = 'claude-usage.scope.v1';
+
+  function fmt(n) {
+    return Number(n || 0).toLocaleString();
+  }
+
+  function fmtShort(n) {
+    const v = Number(n || 0);
+    if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
+    if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
+    return v.toLocaleString();
+  }
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function localTime(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function normalizePath(path) {
+    if (!path) return '/';
+    if (path === '/') return '/';
+    return path.replace(/\/+$/, '') || '/';
+  }
+  function uiContextPath() {
+    if (!state.uiContext || !state.uiContext.cwd) return null;
+    return normalizePath(String(state.uiContext.cwd));
+  }
+  function scopePathExists(path) {
+    const normalized = normalizePath(path);
+    return state.projects.some((p) => {
+      const projectPath = normalizePath(p.path || '');
+      return projectPath === normalized || projectPath.startsWith(normalized + '/');
+    });
+  }
+  function nearestScopePath(path) {
+    const candidate = normalizePath(path);
+    if (candidate === '/') return '/';
+    let cur = candidate;
+    while (cur && cur !== '/') {
+      if (scopePathExists(cur)) {
+        return cur;
+      }
+      const idx = cur.lastIndexOf('/');
+      if (idx <= 0) break;
+      cur = cur.slice(0, idx);
+    }
+    return '/';
+  }
+  function pathAncestors(path) {
+    const list = [];
+    let cur = normalizePath(path);
+    while (cur && cur !== '/') {
+      list.push(cur);
+      const idx = cur.lastIndexOf('/');
+      if (idx <= 0) break;
+      cur = cur.slice(0, idx);
+    }
+    return list.reverse();
+  }
+  function ensurePathExpanded(path) {
+    pathAncestors(path).forEach((ancestorPath) => state.treeOpenPaths.add(ancestorPath));
+  }
+  function persistScope() {
+    try {
+      localStorage.setItem(SCOPE_STORAGE_KEY, JSON.stringify(state.scope));
+    } catch (_) {
+      // ignore storage failures
+    }
+  }
+  function loadPersistedScope() {
+    try {
+      const raw = localStorage.getItem(SCOPE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (!parsed.kind || typeof parsed.value !== 'string') return null;
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+  function setScope(nextScope, opts = {}) {
+    if (!nextScope || typeof nextScope !== 'object') return;
+    const persist = opts.persist !== false;
+    const rerender = opts.rerender !== false;
+    const kind = nextScope.kind || 'all';
+    const value = (kind === 'path') ? normalizePath(nextScope.value || '/') : (nextScope.value || '__all__');
+    state.scope = { kind, value };
+    if (kind === 'path') {
+      ensurePathExpanded(value);
+    }
+    if (persist) persistScope();
+    if (rerender) render(null);
+  }
+  function hydrateScopeSelection() {
+    if (state.scopeHydrated) return;
+    state.scopeHydrated = true;
+
+    const saved = loadPersistedScope();
+    if (saved) {
+      setScope(saved, { persist: false, rerender: false });
+    }
+
+    if (state.scope.kind === 'path' && !scopePathExists(state.scope.value)) {
+      state.scope = { kind: 'all', value: '__all__' };
+    }
+
+    if (state.scope.kind === 'all') {
+      const contextPath = uiContextPath();
+      if (contextPath) {
+        const nearest = nearestScopePath(contextPath);
+        if (nearest !== '/') {
+          setScope({ kind: 'path', value: nearest }, { persist: false, rerender: false });
+        }
+      }
+    }
+  }
+  function setScopeToCurrent() {
+    const contextPath = uiContextPath();
+    if (!contextPath) return;
+    setScope({ kind: 'path', value: nearestScopePath(contextPath) });
+  }
+
+  function projectRepo(project) {
+    const path = project.path || project.slug;
+    const parts = path.split('/').filter(Boolean);
+    return parts[parts.length - 1] || project.slug;
+  }
+
+  function parseEventsTSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length <= 1) return [];
+    return lines.slice(1).map((line) => {
+      const p = line.split('\t');
+      if (p.length < 12) return null;
+      return {
+        ts_epoch: Number(p[0] || 0),
+        ts_iso: p[1] || '',
+        project_slug: p[2] || '',
+        session_id: p[3] || '',
+        input: Number(p[4] || 0),
+        output: Number(p[5] || 0),
+        cache_read: Number(p[6] || 0),
+        cache_create: Number(p[7] || 0),
+        billable: Number(p[8] || 0),
+        total_with_cache: Number(p[9] || 0),
+        content_type: p[10] || '-',
+        signature: p[11] || '',
+      };
+    }).filter(Boolean);
+  }
+  function parseLiveTSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length <= 1) return [];
+    return lines.slice(1).map((line) => {
+      const p = line.split('\t');
+      if (p.length < 13) return null;
+      return {
+        ts_epoch: Number(p[0] || 0),
+        ts_iso: p[1] || '',
+        project_slug: p[2] || '',
+        session_id: p[3] || '',
+        prompt_preview: p[4] || '-',
+        input: Number(p[5] || 0),
+        output: Number(p[6] || 0),
+        cache_read: Number(p[7] || 0),
+        cache_create: Number(p[8] || 0),
+        billable: Number(p[9] || 0),
+        total_with_cache: Number(p[10] || 0),
+        content_type: p[11] || '-',
+        signature: p[12] || '',
+      };
+    }).filter(Boolean);
+  }
+
+  async function fetchJson(path) {
+    try {
+      const r = await fetch(`${path}?_=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (_) {
+      return null;
+    }
+  }
+  async function loadText(path) {
+    try {
+      const r = await fetch(`${path}?_=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return '';
+      return await r.text();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function loadHeartbeat() {
+    try {
+      const r = await fetch(`/heartbeat/sync.txt?_=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return null;
+      const txt = (await r.text()).trim();
+      const [epochS, intervalS, pidS, statusS] = txt.split(',');
+      return {
+        epoch: Number(epochS || 0),
+        interval: Number(intervalS || 0),
+        pid: pidS || '-',
+        status: statusS || '-',
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function scopeIncludesSlug(slug) {
+    if (state.scope.kind === 'all') return true;
+    if (state.scope.kind === 'slug') return slug === state.scope.value;
+    if (state.scope.kind === 'path') {
+      const p = state.projectBySlug.get(slug);
+      if (!p || !p.path) return false;
+      const projectPath = normalizePath(p.path);
+      const basePath = normalizePath(state.scope.value);
+      return projectPath === basePath || projectPath.startsWith(basePath + '/');
+    }
+    return true;
+  }
+  function scopedEvents(arr) {
+    return (arr || []).filter((x) => scopeIncludesSlug(x.project_slug));
+  }
+  function filterByRange(events) {
+    const sec = rangeToSec[rangeEl.value] ?? 108000;
+    if (!sec || sec <= 0) return events;
+    const cutoff = Math.floor(Date.now() / 1000) - sec;
+    return events.filter((e) => e.ts_epoch >= cutoff);
+  }
+  function filterByLiveWindow(rows) {
+    const sec = liveWindowToSec[liveWindowEl.value] ?? 1800;
+    const cutoff = Math.floor(Date.now() / 1000) - sec;
+    return rows.filter((e) => e.ts_epoch >= cutoff);
+  }
+
+  function buildTree(projects) {
+    const root = { name: '/', path: '/', children: new Map(), slugs: [] };
+    projects.forEach((p) => {
+      const parts = (p.path || '').split('/').filter(Boolean);
+      let node = root;
+      let cur = '';
+      parts.forEach((part) => {
+        cur += `/${part}`;
+        if (!node.children.has(part)) {
+          node.children.set(part, { name: part, path: cur, children: new Map(), slugs: [] });
+        }
+        node = node.children.get(part);
+        node.slugs.push(p.slug);
+      });
+    });
+    return root;
+  }
+  function nodeTotal(node, slugTotals) {
+    return (node.slugs || []).reduce((acc, slug) => acc + Number(slugTotals.get(slug) || 0), 0);
+  }
+  function renderTree(root, slugTotals) {
+    // Preserve open folders across refreshes/re-renders.
+    scopeTreeEl.querySelectorAll('details[data-path][open]').forEach((el) => {
+      if (el.dataset.path) state.treeOpenPaths.add(el.dataset.path);
+    });
+    if (state.scope.kind === 'path') {
+      ensurePathExpanded(state.scope.value);
+    }
+
+    const q = (scopeSearchEl.value || '').trim().toLowerCase();
+    function walk(node, depth) {
+      const path = normalizePath(node.path);
+      const kids = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name));
+      const childHtml = kids.map((k) => walk(k, depth + 1)).join('');
+      const total = nodeTotal(node, slugTotals);
+      const selfMatch = !q || path.toLowerCase().includes(q) || node.name.toLowerCase().includes(q);
+      if (!selfMatch && !childHtml) return '';
+      const active = (state.scope.kind === 'path' && state.scope.value === path) ? 'active' : '';
+      const hasChildren = kids.length > 0;
+      if (!hasChildren) {
+        return `
+          <div class="tree-line">
+            <button type="button" class="scope-btn ${active}" data-scope-kind="path" data-scope-value="${esc(path)}" title="${esc(path)}">${esc(node.name)}</button>
+            <span class="scope-total">${fmtShort(total)}</span>
+          </div>
+        `;
+      }
+
+      const isAncestorOfSelected = state.scope.kind === 'path' && state.scope.value.startsWith(path + '/');
+      const shouldOpen = state.treeOpenPaths.has(path) || depth < 1 || isAncestorOfSelected || (q && (selfMatch || childHtml));
+      return `
+        <details data-path="${esc(path)}" ${shouldOpen ? 'open' : ''}>
+          <summary>
+            <div class="tree-line">
+              <button type="button" class="scope-btn ${active}" data-scope-kind="path" data-scope-value="${esc(path)}" title="${esc(path)}">${esc(node.name)}</button>
+              <span class="scope-total">${fmtShort(total)}</span>
+            </div>
+          </summary>
+          ${childHtml}
+        </details>
+      `;
+    }
+    const html = [...root.children.values()].sort((a, b) => a.name.localeCompare(b.name)).map((n) => walk(n, 0)).join('');
+    scopeTreeEl.innerHTML = html || '<div class="meta">No matching directories.</div>';
+    scopeTreeEl.querySelectorAll('details[data-path]').forEach((detailsEl) => {
+      detailsEl.addEventListener('toggle', () => {
+        const path = detailsEl.dataset.path || '';
+        if (!path) return;
+        if (detailsEl.open) state.treeOpenPaths.add(path);
+        else state.treeOpenPaths.delete(path);
+      });
+    });
+  }
+  function renderAccountBox() {
+    const a = state.account || {};
+    const has = Object.keys(a).length > 0;
+    if (!has) {
+      acctBoxEl.innerHTML = '<div class="acct-title">Account</div><div class="meta">No local account metadata found.</div>';
+      return;
+    }
+    const rows = [
+      ['name', a.display_name || '-'],
+      ['email', a.email || '-'],
+      ['billing', a.billing_type || '-'],
+      ['org', a.organization_uuid || '-'],
+      ['extra usage', String(a.has_extra_usage_enabled ?? '-')],
+      ['subscribed', String(a.has_available_subscription ?? '-')],
+    ];
+    acctBoxEl.innerHTML = `
+      <div class="acct-title">Claude Account</div>
+      <div class="acct-kv">
+        ${rows.map(([k, v]) => `<div class="acct-k">${esc(k)}</div><div>${esc(v)}</div>`).join('')}
+      </div>
+    `;
+  }
+
+  function autoBucketSec(rangeSec) {
+    if (!rangeSec || rangeSec <= 0) return 3600;
+    if (rangeSec <= 3 * 3600) return 60;
+    if (rangeSec <= 12 * 3600) return 300;
+    if (rangeSec <= 48 * 3600) return 900;
+    if (rangeSec <= 7 * 86400) return 3600;
+    if (rangeSec <= 30 * 86400) return 21600;
+    return 86400;
+  }
+
+  function selectedBucketSec() {
+    if (bucketEl.value !== 'auto') return Number(bucketEl.value || 900);
+    const sec = rangeToSec[rangeEl.value] ?? 108000;
+    return autoBucketSec(sec);
+  }
+  function bucketize(events, bucketSec) {
+    const map = new Map();
+    events.forEach((e) => {
+      const b = Math.floor(e.ts_epoch / bucketSec) * bucketSec;
+      let row = map.get(b);
+      if (!row) {
+        row = {
+          epoch: b,
+          count: 0,
+          input: 0,
+          output: 0,
+          cache_read: 0,
+          cache_create: 0,
+          billable: 0,
+          total_with_cache: 0,
+          value: 0,
+        };
+        map.set(b, row);
+      }
+      row.count += 1;
+      row.input += Number(e.input || 0);
+      row.output += Number(e.output || 0);
+      row.cache_read += Number(e.cache_read || 0);
+      row.cache_create += Number(e.cache_create || 0);
+      row.billable += Number(e.billable || 0);
+      row.total_with_cache += Number(e.total_with_cache || 0);
+    });
+    return [...map.values()]
+      .sort((a, b) => a.epoch - b.epoch)
+      .map((row) => ({ ...row }));
+  }
+
+  function formatBucketLabel(epoch, bucketSec) {
+    const d = new Date(epoch * 1000);
+    if (bucketSec >= 86400) {
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+    if (bucketSec >= 3600) {
+      return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' });
+    }
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function chartSeries(mode, metric) {
+    if (mode === 'in_out') {
+      return { stacked: true, label: 'Input vs Output', series: [
+        { key: 'input', label: 'input', color: '#0f766e', value: (p) => p.input },
+        { key: 'output', label: 'output', color: '#c2410c', value: (p) => p.output },
+      ]};
+    }
+    if (mode === 'cached_non_cached') {
+      return { stacked: true, label: 'Cached vs Non-Cached', series: [
+        { key: 'non_cached', label: 'non_cached(billable)', color: '#0f766e', value: (p) => p.billable },
+        { key: 'cached', label: 'cached(read+create)', color: '#1d4ed8', value: (p) => (p.cache_read + p.cache_create) },
+      ]};
+    }
+    if (mode === 'cache_parts') {
+      return { stacked: true, label: 'Cache Read vs Create', series: [
+        { key: 'cache_read', label: 'cache_read', color: '#1d4ed8', value: (p) => p.cache_read },
+        { key: 'cache_create', label: 'cache_create', color: '#7c3aed', value: (p) => p.cache_create },
+      ]};
+    }
+    return { stacked: false, label: metric, series: [
+      { key: metric, label: metric, color: '#c2410c', value: (p) => Number(p[metric] || 0) },
+    ]};
+  }
+  function drawChart(chartId, tipId, points, opts) {
+    const canvas = document.getElementById(chartId);
+    const tip = document.getElementById(tipId);
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const padL = 56;
+    const padR = 14;
+    const padT = 12;
+    const padB = 34;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const effectiveViz = (opts.viz === 'area' && opts.series.length > 1) ? 'line' : opts.viz;
+    const values = points.map((p) => {
+      const vals = opts.series.map((s) => Number(s.value(p) || 0));
+      p.__vals = vals;
+      p.__sum = vals.reduce((a, v) => a + v, 0);
+      return opts.stacked ? p.__sum : Math.max(...vals, 0);
+    });
+    const min = 0;
+    const maxRaw = Math.max(...values, 1);
+    const max = maxRaw <= min ? min + 1 : maxRaw;
+
+    const plotW = Math.max(1, w - padL - padR);
+    const plotH = Math.max(1, h - padT - padB);
+
+    const x = (i) => padL + (i * plotW / Math.max(1, points.length - 1));
+    const y = (v) => h - padB - ((v - min) * plotH / (max - min));
+
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const yy = padT + ((plotH * i) / 4);
+      ctx.beginPath();
+      ctx.moveTo(padL, yy);
+      ctx.lineTo(w - padR, yy);
+      ctx.stroke();
+    }
+
+    if (effectiveViz === 'bar') {
+      const bw = Math.max(2, plotW / Math.max(1, points.length) * 0.78);
+      points.forEach((p, i) => {
+        const xx = x(i) - (bw / 2);
+        if (opts.stacked) {
+          let acc = 0;
+          opts.series.forEach((s, j) => {
+            const v = p.__vals[j];
+            const yTop = y(acc + v);
+            const yBottom = y(acc);
+            ctx.fillStyle = s.color;
+            ctx.fillRect(xx, yTop, bw, Math.max(1, yBottom - yTop));
+            acc += v;
+          });
+        } else {
+          const groupW = bw / Math.max(1, opts.series.length);
+          opts.series.forEach((s, j) => {
+            const v = p.__vals[j];
+            const yy = y(v);
+            ctx.fillStyle = s.color;
+            ctx.fillRect(xx + (j * groupW), yy, Math.max(1, groupW - 1), Math.max(1, h - padB - yy));
+          });
+        }
+      });
+    } else {
+      opts.series.forEach((s, j) => {
+        if (effectiveViz === 'area' && opts.series.length === 1) {
+          ctx.fillStyle = 'rgba(194, 65, 12, 0.20)';
+          ctx.beginPath();
+          points.forEach((p, i) => {
+            const xx = x(i);
+            const yy = y(p.__vals[j]);
+            if (i === 0) ctx.moveTo(xx, yy);
+            else ctx.lineTo(xx, yy);
+          });
+          ctx.lineTo(x(points.length - 1), h - padB);
+          ctx.lineTo(x(0), h - padB);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        points.forEach((p, i) => {
+          const xx = x(i);
+          const yy = y(opts.stacked ? p.__sum : p.__vals[j]);
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        });
+        ctx.stroke();
+      });
+    }
+
+    if (opts.focusEpoch) {
+      let nearest = null;
+      let dist = Infinity;
+      points.forEach((p, i) => {
+        const d = Math.abs(p.epoch - opts.focusEpoch);
+        if (d < dist) {
+          dist = d;
+          nearest = { i, p };
+        }
+      });
+      if (nearest) {
+        const xx = x(nearest.i);
+        ctx.strokeStyle = '#1d4ed8';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xx, padT);
+        ctx.lineTo(xx, h - padB);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    ctx.fillStyle = '#4b5563';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(`max ${fmtShort(max)}`, 6, padT + 8);
+    const latestVal = opts.stacked ? (points[points.length - 1]?.__sum || 0) : Math.max(...(points[points.length - 1]?.__vals || [0]));
+    ctx.fillText(`latest ${fmtShort(latestVal)}`, w - 165, padT + 8);
+    if (points.length > 1) {
+      ctx.fillText(formatBucketLabel(points[0].epoch, opts.bucketSec), padL, h - 8);
+      ctx.fillText(formatBucketLabel(points[Math.floor(points.length / 2)].epoch, opts.bucketSec), Math.max(padL + 120, Math.floor(w / 2) - 50), h - 8);
+      ctx.fillText(formatBucketLabel(points[points.length - 1].epoch, opts.bucketSec), w - 130, h - 8);
+    }
+
+    state.chartStore.set(chartId, { canvas, tip, points, opts, x, y, padL, padR, padT, padB });
+  }
+
+  function bindChartHover(chartId) {
+    const canvas = document.getElementById(chartId);
+    if (canvas.dataset.bound === '1') return;
+    canvas.dataset.bound = '1';
+
+    canvas.addEventListener('mousemove', (event) => {
+      const st = state.chartStore.get(chartId);
+      if (!st || !st.points.length) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      const mx = px * (canvas.width / rect.width);
+      const range = Math.max(1, canvas.width - st.padL - st.padR);
+      const idxRaw = ((mx - st.padL) * Math.max(1, st.points.length - 1)) / range;
+      const idx = Math.max(0, Math.min(st.points.length - 1, Math.round(idxRaw)));
+      const pt = st.points[idx];
+
+      const lines = st.opts.series.map((s, i) => `${esc(s.label)}: ${fmt(pt.__vals[i] || 0)}`).join('<br>');
+      const totalLine = st.opts.stacked ? `<br>total: ${fmt(pt.__sum || 0)}` : '';
+      st.tip.innerHTML = `${esc(st.opts.tipLabel)}<br>${esc(formatBucketLabel(pt.epoch, st.opts.bucketSec))}<br>${lines}${totalLine}<br>prompts: ${fmt(pt.count)}`;
+      st.tip.style.left = `${Math.max(8, Math.min(rect.width - 8, px))}px`;
+      st.tip.style.top = `${Math.max(18, py)}px`;
+      st.tip.style.opacity = '1';
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      const st = state.chartStore.get(chartId);
+      if (!st) return;
+      st.tip.style.opacity = '0';
+    });
+  }
+
+  function renderStatus(syncHeartbeat) {
+    const pills = [];
+    const now = Math.floor(Date.now() / 1000);
+
+    if (syncHeartbeat && syncHeartbeat.epoch) {
+      const age = now - syncHeartbeat.epoch;
+      const healthy = syncHeartbeat.interval > 0 ? age <= Math.max(300, syncHeartbeat.interval * 12) : false;
+      const raw = (syncHeartbeat.status || '').toLowerCase();
+      const stateLabel = (raw === 'ok') ? 'running' : (raw === 'working' ? 'syncing' : (healthy ? 'running' : 'stale'));
+      pills.push(`<span class="pill ${healthy ? 'ok' : 'bad'}">Sync: ${stateLabel} (pid ${syncHeartbeat.pid}, age ${age}s)</span>`);
+    } else {
+      pills.push('<span class="pill bad">Sync: no heartbeat</span>');
+    }
+
+    if (state.syncStatus) {
+      pills.push(`<span class="pill">Last sync: ${state.syncStatus.last_sync_iso || '-'}</span>`);
+      pills.push(`<span class="pill">Projects: ${fmt(state.projects.length)}</span>`);
+      pills.push(`<span class="pill">Rows: ${fmt(state.syncStatus.live_event_rows || state.syncStatus.event_rows || 0)}</span>`);
+    }
+
+    statusRowEl.innerHTML = pills.join('');
+  }
+  function latestEpoch(events) {
+    if (!events || !events.length) return null;
+    let max = 0;
+    events.forEach((e) => {
+      const ts = Number(e.ts_epoch || 0);
+      if (ts > max) max = ts;
+    });
+    return max || null;
+  }
+  function scopeHintHtml(message, actions) {
+    const btns = (actions || []).map((a) => `<button type="button" data-action="${esc(a.action)}">${esc(a.label)}</button>`).join('');
+    return `<span class="label">${esc(message)}</span>${btns}`;
+  }
+  function renderScopeHint(scoped, ranged) {
+    scopeHintEl.classList.remove('show');
+    scopeHintEl.innerHTML = '';
+
+    if (state.scope.kind === 'all') return;
+
+    const hasAnyScoped = (scoped || []).length > 0;
+    const latestScopedEpoch = latestEpoch(scoped);
+    if (!hasAnyScoped) {
+      scopeHintEl.innerHTML = scopeHintHtml(
+        'No usage found for this directory scope yet.',
+        [
+          { action: 'scope-all', label: 'Show All Projects' },
+          { action: 'scope-current', label: 'Jump To Current' },
+        ]
+      );
+      scopeHintEl.classList.add('show');
+      return;
+    }
+
+    if ((ranged || []).length === 0 && rangeEl.value !== 'all') {
+      const latestIso = latestScopedEpoch ? new Date(latestScopedEpoch * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+      scopeHintEl.innerHTML = scopeHintHtml(
+        `No usage in ${rangeEl.options[rangeEl.selectedIndex]?.text || rangeEl.value} for this scope (latest ${latestIso}).`,
+        [
+          { action: 'range-7d', label: 'Set Range 7d' },
+          { action: 'range-all', label: 'Set Range All Time' },
+          { action: 'scope-all', label: 'Show All Projects' },
+        ]
+      );
+      scopeHintEl.classList.add('show');
+    }
+  }
+
+  function renderCards(scoped, ranged, liveRows) {
+    const sum = (arr, key) => arr.reduce((acc, x) => acc + Number(x[key] || 0), 0);
+    const now = Math.floor(Date.now() / 1000);
+    const inWindow = (arr, sec) => arr.filter((x) => x.ts_epoch >= (now - sec));
+
+    const totalBillable = sum(ranged, 'billable');
+    const billable30m = sum(inWindow(scoped, 1800), 'billable');
+    const billable1h = sum(inWindow(scoped, 3600), 'billable');
+    const prompts1h = inWindow(liveRows, 3600).length;
+    const latestEpoch = ranged.length ? ranged[ranged.length - 1].ts_epoch : null;
+    const latestAgeSec = latestEpoch ? Math.max(0, now - latestEpoch) : null;
+    const latestAgeLabel = latestAgeSec == null ? '-' : (latestAgeSec < 120 ? `${latestAgeSec}s` : `${Math.round(latestAgeSec / 60)}m`);
+    const io1hIn = sum(inWindow(scoped, 3600), 'input');
+    const io1hOut = sum(inWindow(scoped, 3600), 'output');
+    const cacheAmplification = totalBillable > 0 ? ((sum(ranged, 'cache_read') + sum(ranged, 'cache_create')) / totalBillable) : 0;
+    const cacheAmplificationLabel = Number.isFinite(cacheAmplification) ? `${cacheAmplification.toFixed(1)}x` : '-';
+    const burnRate30m = billable30m * 2;
+
+    const rows = [
+      ['billable (range)', totalBillable],
+      ['billable (last 30m)', billable30m],
+      ['billable (last 1h)', billable1h],
+      ['burn rate / hr', burnRate30m],
+      ['in/out (last 1h)', `${fmt(io1hIn)} / ${fmt(io1hOut)}`],
+      ['prompts (last 1h)', prompts1h],
+      ['cache / non-cache', cacheAmplificationLabel],
+      ['latest event age', latestAgeLabel],
+    ];
+
+    const cardValue = (v) => (typeof v === 'number' ? fmt(v) : String(v));
+    cardsEl.innerHTML = rows.map(([k, v]) => `
+      <div class="card">
+        <div class="k">${k}</div>
+        <div class="v">${cardValue(v)}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderMainChart(ranged, metric, bucketSec, viz, mode) {
+    const points = bucketize(ranged, bucketSec);
+    const config = chartSeries(mode, metric);
+    mainTitleEl.textContent = `Token Flow (${config.label}, ${viz}, ${bucketSec}s)`;
+
+    if (!points.length) {
+      drawChart('mainChart', 'mainTip', [{ epoch: Math.floor(Date.now() / 1000), value: 0 }], {
+        viz,
+        series: [{ key: 'none', label: 'none', color: '#0f766e', value: () => 0 }],
+        stacked: false,
+        tipLabel: 'No data',
+        bucketSec,
+        focusEpoch: state.focusEpoch,
+      });
+      mainMetaEl.textContent = 'No usage in selected scope/range.';
+      return;
+    }
+
+    const totals = config.series.map((s) => points.reduce((acc, p) => acc + Number(s.value(p) || 0), 0));
+    drawChart('mainChart', 'mainTip', points, {
+      viz,
+      series: config.series,
+      stacked: config.stacked,
+      tipLabel: 'Bucket',
+      bucketSec,
+      focusEpoch: state.focusEpoch,
+    });
+    const totalLabel = config.series.map((s, i) => `${s.label}=${fmt(totals[i])}`).join(' | ');
+    mainMetaEl.textContent = `buckets=${points.length} ${totalLabel} latest=${formatBucketLabel(points[points.length - 1].epoch, bucketSec)}`;
+  }
+
+  function renderDailyChart(scoped) {
+    const now = Math.floor(Date.now() / 1000);
+    const cutoff = now - (30 * 86400);
+    const recent = scoped.filter((e) => e.ts_epoch >= cutoff);
+    const points = bucketize(recent, 86400);
+    const cfg = chartSeries('single', 'billable');
+
+    if (!points.length) {
+      drawChart('dailyChart', 'dailyTip', [{ epoch: now, value: 0 }], {
+        viz: 'bar',
+        series: [{ key: 'none', label: 'none', color: '#1d4ed8', value: () => 0 }],
+        stacked: false,
+        tipLabel: 'Day',
+        bucketSec: 86400,
+        focusEpoch: state.focusEpoch,
+      });
+      dailyMetaEl.textContent = 'No billable events in last 30 days.';
+      return;
+    }
+
+    drawChart('dailyChart', 'dailyTip', points, {
+      viz: 'bar',
+      series: [{ ...cfg.series[0], color: '#1d4ed8' }],
+      stacked: false,
+      tipLabel: 'Day',
+      bucketSec: 86400,
+      focusEpoch: state.focusEpoch,
+    });
+
+    const total = points.reduce((a, p) => a + p.billable, 0);
+    dailyMetaEl.textContent = `days=${points.length} total_billable=${fmt(total)}`;
+  }
+
+  function renderLiveTable(rows) {
+    const sorted = [...rows].sort((a, b) => b.ts_epoch - a.ts_epoch).slice(0, 80);
+    const bySlug = new Map(state.projects.map((p) => [p.slug, p]));
+    liveBodyEl.innerHTML = sorted.map((e) => {
+      const p = bySlug.get(e.project_slug);
+      const label = p ? projectRepo(p) : e.project_slug;
+      const prompt = e.prompt_preview || '-';
+      const cached = Number(e.cache_read || 0) + Number(e.cache_create || 0);
+      return `
+        <tr>
+          <td>${esc(localTime(e.ts_iso || ''))}</td>
+          <td>${label}</td>
+          <td class="prompt" title="${esc(prompt)}">${esc(prompt)}</td>
+          <td>${fmt(e.input)}</td>
+          <td>${fmt(e.output)}</td>
+          <td>${fmt(e.billable)}</td>
+          <td>${fmt(cached)}</td>
+        </tr>
+      `;
+    }).join('');
+    liveTitleEl.textContent = `Live Prompt Consumption (${liveWindowEl.value})`;
+    liveMetaEl.textContent = `rows_shown=${sorted.length} | scope=${state.scope.kind === 'all' ? 'all projects' : state.scope.value}`;
+  }
+
+  function parseFocusInput() {
+    const v = focusEl.value;
+    if (!v) {
+      state.focusEpoch = null;
+      return;
+    }
+    const t = new Date(v).getTime();
+    state.focusEpoch = Number.isFinite(t) ? Math.floor(t / 1000) : null;
+  }
+  function renderCurrentScopeButton() {
+    const contextPath = uiContextPath();
+    if (!contextPath) {
+      currentScopeBtnEl.disabled = true;
+      currentScopeBtnEl.textContent = 'Current';
+      currentScopeBtnEl.title = 'No launch directory detected.';
+      return;
+    }
+    const label = contextPath.split('/').filter(Boolean).pop() || contextPath;
+    currentScopeBtnEl.disabled = false;
+    currentScopeBtnEl.textContent = `Current: ${label}`;
+    currentScopeBtnEl.title = `Jump to ${contextPath}`;
+  }
+
+  function render(syncHeartbeat) {
+    hydrateScopeSelection();
+    if (state.scope.kind === 'path' && !scopePathExists(state.scope.value)) {
+      state.scope = { kind: 'all', value: '__all__' };
+    }
+    const scoped = scopedEvents(state.events);
+    const scopedLive = scopedEvents(state.liveEvents);
+    const ranged = filterByRange(scoped).sort((a, b) => a.ts_epoch - b.ts_epoch);
+    const liveRows = filterByLiveWindow(scopedLive).sort((a, b) => a.ts_epoch - b.ts_epoch);
+    const rangeScopedAll = filterByRange(state.events);
+    const slugTotals = new Map();
+    rangeScopedAll.forEach((e) => {
+      slugTotals.set(e.project_slug, (slugTotals.get(e.project_slug) || 0) + Number(e.billable || 0));
+    });
+    const metric = metricEl.value;
+    const viz = vizEl.value;
+    const mode = graphModeEl.value;
+    const bucketSec = selectedBucketSec();
+    const contextPath = uiContextPath();
+
+    subtitleEl.textContent = state.scope.kind === 'all'
+      ? (contextPath ? `Scope: all projects (launch: ${contextPath})` : 'Live token consumption and prompt flow from Claude session logs')
+      : `Scope: ${state.scope.value}`;
+    renderCurrentScopeButton();
+    renderStatus(syncHeartbeat);
+    renderScopeHint(scoped, ranged);
+    renderCards(scoped, ranged, scopedLive);
+    renderMainChart(ranged, metric, bucketSec, viz, mode);
+    renderDailyChart(scoped);
+    renderLiveTable(liveRows);
+    renderTree(buildTree(state.projects), slugTotals);
+    renderAccountBox();
+  }
+
+  async function refresh() {
+    const [projects, eventsTxt, liveTxt, syncStatus, heartbeat, account, uiContext] = await Promise.all([
+      fetchJson('/projects.json'),
+      loadText('/events.tsv'),
+      loadText('/live-events.tsv'),
+      fetchJson('/sync-status.json'),
+      loadHeartbeat(),
+      fetchJson('/account.json'),
+      fetchJson('/ui-context.json'),
+    ]);
+
+    state.projects = Array.isArray(projects) ? projects.filter((x) => x && x.slug) : [];
+    state.projectBySlug = new Map(state.projects.map((p) => [p.slug, p]));
+    state.events = eventsTxt.trim() ? parseEventsTSV(eventsTxt) : [];
+    state.liveEvents = liveTxt.trim() ? parseLiveTSV(liveTxt) : [];
+    state.syncStatus = syncStatus;
+    state.account = account || {};
+    state.uiContext = uiContext || null;
+    render(heartbeat);
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', async () => {
+    parseFocusInput();
+    await refresh();
+  });
+
+  rangeEl.addEventListener('change', () => {
+    parseFocusInput();
+    render(null);
+  });
+  bucketEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  metricEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  graphModeEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  vizEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  liveWindowEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  focusEl.addEventListener('change', () => { parseFocusInput(); render(null); });
+  scopeSearchEl.addEventListener('input', () => { render(null); });
+  scopeTreeEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.scope-btn');
+    if (!btn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    setScope({ kind: btn.dataset.scopeKind || 'path', value: btn.dataset.scopeValue || '/' });
+  });
+  allScopeBtnEl.addEventListener('click', () => { setScope({ kind: 'all', value: '__all__' }); });
+  currentScopeBtnEl.addEventListener('click', () => { setScopeToCurrent(); });
+  scopeHintEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action || '';
+    if (action === 'scope-all') {
+      setScope({ kind: 'all', value: '__all__' });
+      return;
+    }
+    if (action === 'scope-current') {
+      setScopeToCurrent();
+      return;
+    }
+    if (action === 'range-7d') {
+      rangeEl.value = '7d';
+      render(null);
+      return;
+    }
+    if (action === 'range-all') {
+      rangeEl.value = 'all';
+      render(null);
+    }
+  });
+  acctBtnEl.addEventListener('click', () => {
+    acctWrapEl.classList.toggle('open');
+  });
+  document.addEventListener('click', (ev) => {
+    if (!acctWrapEl.contains(ev.target)) acctWrapEl.classList.remove('open');
+  });
+
+  bindChartHover('mainChart');
+  bindChartHover('dailyChart');
+
+  refresh();
+  setInterval(refresh, 5000);
+})();
+</script>
+</body>
+</html>
