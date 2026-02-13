@@ -61,8 +61,8 @@ func Run(cfg model.Config) (*Result, error) {
 		allLiveEvents = append(allLiveEvents, liveEvents...)
 	}
 
-	// Sort events
-	sort.Slice(allEvents, func(i, j int) bool {
+	// Sort events (stable for deterministic output with equal keys)
+	sort.SliceStable(allEvents, func(i, j int) bool {
 		a, b := allEvents[i], allEvents[j]
 		if a.TSEpoch != b.TSEpoch {
 			return a.TSEpoch < b.TSEpoch
@@ -80,7 +80,7 @@ func Run(cfg model.Config) (*Result, error) {
 	})
 	allEvents = dedupEvents(allEvents)
 
-	sort.Slice(allLiveEvents, func(i, j int) bool {
+	sort.SliceStable(allLiveEvents, func(i, j int) bool {
 		a, b := allLiveEvents[i], allLiveEvents[j]
 		if a.TSEpoch != b.TSEpoch {
 			return a.TSEpoch < b.TSEpoch
@@ -206,6 +206,14 @@ func writeProjectsJSON(path string, entries []projectEntry) error {
 		return os.WriteFile(path, []byte("[]\n"), 0644)
 	}
 
+	// Sort entries for deterministic grouping (matches shell's LC_ALL=C sort -u)
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Slug != entries[j].Slug {
+			return entries[i].Slug < entries[j].Slug
+		}
+		return entries[i].Path < entries[j].Path
+	})
+
 	// Group by slug, prefer non-/unknown/ paths
 	grouped := make(map[string][]string)
 	for _, e := range entries {
@@ -242,27 +250,29 @@ func writeProjectsJSON(path string, entries []projectEntry) error {
 
 func writeAccountJSON(path string) {
 	home, _ := os.UserHomeDir()
-	claudeJSON := filepath.Join(home, ".claude.json")
+	writeAccountJSONFrom(path, filepath.Join(home, ".claude.json"))
+}
 
-	data, err := os.ReadFile(claudeJSON)
+func writeAccountJSONFrom(outPath string, claudeJSONPath string) {
+	data, err := os.ReadFile(claudeJSONPath)
 	if err != nil {
-		os.WriteFile(path, []byte("{}\n"), 0644)
+		os.WriteFile(outPath, []byte("{}\n"), 0644)
 		return
 	}
 
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		os.WriteFile(path, []byte("{}\n"), 0644)
+		os.WriteFile(outPath, []byte("{}\n"), 0644)
 		return
 	}
 
-	oauth, _ := raw["oauthAccount"].(map[string]interface{})
+	oauth, _ := raw["oauthAccount"].(map[string]any)
 	if oauth == nil {
-		os.WriteFile(path, []byte("{}\n"), 0644)
+		os.WriteFile(outPath, []byte("{}\n"), 0644)
 		return
 	}
 
-	account := map[string]interface{}{
+	account := map[string]any{
 		"display_name":               oauth["displayName"],
 		"email":                      oauth["emailAddress"],
 		"billing_type":               oauth["billingType"],
@@ -278,11 +288,11 @@ func writeAccountJSON(path string) {
 	}
 
 	out, _ := json.MarshalIndent(account, "", "  ")
-	os.WriteFile(path, append(out, '\n'), 0644)
+	os.WriteFile(outPath, append(out, '\n'), 0644)
 }
 
 func writeSyncStatus(path string, now time.Time, result *Result) error {
-	status := map[string]interface{}{
+	status := map[string]any{
 		"last_sync_epoch": now.Unix(),
 		"last_sync_iso":   now.UTC().Format("2006-01-02T15:04:05Z"),
 		"source_root":     result.SourceRoot,

@@ -1,0 +1,4 @@
+{invalid json here
+also not valid
+{"type":"user","message":{"role":"user","content":"Hello"},"timestamp":"2025-01-15T13:00:00.000Z","cwd":"/Users/test/found-after-errors"}
+{"type":"user","message":{"role":"user","content":"Again"},"timestamp":"2025-01-15T13:01:00.000Z","cwd":"/Users/test/second-cwd"}

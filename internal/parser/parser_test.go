@@ -3,6 +3,7 @@ package parser
 import (
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -172,6 +173,22 @@ func TestParseSessionFileLive(t *testing.T) {
 				assert.Equal(t, "Read this file", events[1].PromptPreview)
 			},
 		},
+		// C11: Session starting with tool_result (no prior human prompt)
+		{
+			name:      "tool_result start session — no human prompt yet",
+			fixture:   "tool_result_start_session.jsonl",
+			slug:      "tool-start",
+			sessionID: "session-tool-start",
+			wantCount: 4,
+			checkFn: func(t *testing.T, events []liveEventResult) {
+				// First 3 events: no human prompt seen, so preview stays "-"
+				assert.Equal(t, "-", events[0].PromptPreview, "no human prompt before first assistant")
+				assert.Equal(t, "-", events[1].PromptPreview, "tool_result doesn't set prompt")
+				assert.Equal(t, "-", events[2].PromptPreview, "still no human prompt after tool_results")
+				// Fourth event: after "Thanks, now help me with tests" human prompt
+				assert.Equal(t, "Thanks, now help me with tests", events[3].PromptPreview)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -219,6 +236,18 @@ func TestExtractProjectPath(t *testing.T) {
 			fixture: "empty_session.jsonl",
 			want:    "",
 		},
+		// C16: Malformed JSONL — skips bad lines, finds cwd after errors
+		{
+			name:    "malformed lines then cwd",
+			fixture: "malformed_cwd_session.jsonl",
+			want:    "/Users/test/found-after-errors",
+		},
+		// C16: Multiple cwd fields — returns the first one found
+		{
+			name:    "multiple cwd returns first",
+			fixture: "malformed_cwd_session.jsonl",
+			want:    "/Users/test/found-after-errors",
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,6 +269,8 @@ func TestParseEpoch(t *testing.T) {
 		{name: "with timezone offset", ts: "2025-01-15T11:30:00.456+01:00", want: 1736937000},
 		{name: "empty string", ts: "", want: 0},
 		{name: "invalid", ts: "not-a-date", want: 0},
+		// C2: fractional without timezone returns 0 (matches shell behavior)
+		{name: "fractional no timezone", ts: "2025-01-15T10:30:00.123", want: 0},
 	}
 
 	for _, tt := range tests {
@@ -262,6 +293,11 @@ func TestIsHumanPrompt(t *testing.T) {
 		{name: "mixed content", raw: `[{"type":"text","text":"hi"},{"type":"tool_result","tool_use_id":"t1","content":"data"}]`, want: true},
 		{name: "empty array", raw: `[]`, want: true},
 		{name: "null", raw: `null`, want: true},
+		// C3: Non-array, non-string content types — all return true (fallback)
+		{name: "json object", raw: `{"foo":"bar"}`, want: true},
+		{name: "number", raw: `123`, want: true},
+		{name: "boolean true", raw: `true`, want: true},
+		{name: "boolean false", raw: `false`, want: true},
 	}
 
 	for _, tt := range tests {
@@ -281,11 +317,52 @@ func TestCleanText(t *testing.T) {
 		{name: "tabs and newlines", input: "hello\tworld\nfoo", want: "hello world foo"},
 		{name: "multiple spaces", input: "hello   world", want: "hello world"},
 		{name: "leading trailing", input: "  hello  ", want: "hello"},
+		// C1: Mixed consecutive whitespace (tab+CR+newline with no spaces between)
+		{name: "tab cr newline consecutive", input: "hello\t\r\nworld", want: "hello world"},
+		{name: "all whitespace types mixed", input: "a\t\n\r\t\nb", want: "a b"},
+		{name: "tabs only consecutive", input: "hello\t\t\tworld", want: "hello world"},
+		{name: "newlines only consecutive", input: "hello\n\n\nworld", want: "hello world"},
+		{name: "empty string", input: "", want: ""},
+		{name: "only whitespace", input: " \t\n\r ", want: ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, cleanText(tt.input))
+		})
+	}
+}
+
+func TestPromptPreview(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "short prompt", raw: `"hello"`, want: "hello"},
+		{name: "empty content", raw: `""`, want: "-"},
+		// C10: Boundary tests for 180-char truncation
+		{
+			name: "exactly 180 chars not truncated",
+			raw:  `"` + strings.Repeat("a", 180) + `"`,
+			want: strings.Repeat("a", 180),
+		},
+		{
+			name: "181 chars truncated to 177+ellipsis",
+			raw:  `"` + strings.Repeat("b", 181) + `"`,
+			want: strings.Repeat("b", 177) + "...",
+		},
+		{
+			name: "179 chars not truncated",
+			raw:  `"` + strings.Repeat("c", 179) + `"`,
+			want: strings.Repeat("c", 179),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := promptPreview([]byte(tt.raw))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

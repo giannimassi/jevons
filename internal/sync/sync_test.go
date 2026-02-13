@@ -126,6 +126,87 @@ func TestSyncIdempotent(t *testing.T) {
 	assert.Equal(t, 4, len(lines), "still 1 header + 3 data lines after re-sync")
 }
 
+// C13: Account JSON generation tests
+func TestWriteAccountJSON(t *testing.T) {
+	tests := []struct {
+		name       string
+		claudeJSON string
+		wantFields []string
+		wantEmpty  bool
+	}{
+		{
+			name:      "missing claude.json writes empty object",
+			wantEmpty: true,
+		},
+		{
+			name:       "invalid JSON writes empty object",
+			claudeJSON: `{not valid json`,
+			wantEmpty:  true,
+		},
+		{
+			name:       "no oauthAccount writes empty object",
+			claudeJSON: `{"someOtherField": true}`,
+			wantEmpty:  true,
+		},
+		{
+			name:       "null oauthAccount writes empty object",
+			claudeJSON: `{"oauthAccount": null}`,
+			wantEmpty:  true,
+		},
+		{
+			name: "valid oauthAccount extracts fields",
+			claudeJSON: `{
+				"oauthAccount": {
+					"displayName": "Test User",
+					"emailAddress": "test@example.com",
+					"billingType": "pro",
+					"accountUuid": "uuid-123"
+				},
+				"hasAvailableSubscription": true,
+				"userID": "user-456"
+			}`,
+			wantFields: []string{"display_name", "email", "billing_type", "account_uuid", "generated_at"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			outPath := filepath.Join(tmpDir, "account.json")
+			claudePath := filepath.Join(tmpDir, ".claude.json")
+
+			if tt.claudeJSON != "" {
+				require.NoError(t, os.WriteFile(claudePath, []byte(tt.claudeJSON), 0644))
+			}
+
+			writeAccountJSONFrom(outPath, claudePath)
+
+			data, err := os.ReadFile(outPath)
+			require.NoError(t, err)
+
+			if tt.wantEmpty {
+				assert.Equal(t, "{}\n", string(data))
+				return
+			}
+
+			var result map[string]any
+			require.NoError(t, json.Unmarshal(data, &result))
+			for _, field := range tt.wantFields {
+				assert.Contains(t, result, field, "should contain field %s", field)
+			}
+
+			// Verify specific values
+			if tt.name == "valid oauthAccount extracts fields" {
+				assert.Equal(t, "Test User", result["display_name"])
+				assert.Equal(t, "test@example.com", result["email"])
+				assert.Equal(t, "pro", result["billing_type"])
+				assert.Equal(t, true, result["has_available_subscription"])
+				assert.Equal(t, "user-456", result["user_id"])
+			}
+		})
+	}
+}
+
 func TestSyncEmptySource(t *testing.T) {
 	tmpDir := t.TempDir()
 	dataDir := filepath.Join(tmpDir, "data")

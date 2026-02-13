@@ -27,10 +27,10 @@ type messageWrapper struct {
 }
 
 type usageBlock struct {
-	InputTokens                int64 `json:"input_tokens"`
-	OutputTokens               int64 `json:"output_tokens"`
-	CacheReadInputTokens       int64 `json:"cache_read_input_tokens"`
-	CacheCreationInputTokens   int64 `json:"cache_creation_input_tokens"`
+	InputTokens              int64 `json:"input_tokens"`
+	OutputTokens             int64 `json:"output_tokens"`
+	CacheReadInputTokens     int64 `json:"cache_read_input_tokens"`
+	CacheCreationInputTokens int64 `json:"cache_creation_input_tokens"`
 }
 
 type contentBlock struct {
@@ -244,8 +244,8 @@ func parseEpoch(ts string) int64 {
 			}
 		}
 		if cleaned == ts {
-			// No timezone suffix found after fraction — just strip fraction
-			cleaned = ts[:dotIdx] + "Z"
+			// No timezone suffix found — malformed timestamp, return 0 (matches shell behavior)
+			return 0
 		}
 	}
 
