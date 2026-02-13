@@ -10,10 +10,18 @@ Jevons follows [Semantic Versioning](https://semver.org/). During the `v0.x` ser
 
 Once `v1.0.0` is reached, standard SemVer rules apply.
 
+## Prerequisites (First Release Only)
+
+Before cutting the first release, ensure:
+
+1. Repository `giannimassi/homebrew-jevons` exists and is public
+2. GitHub secret `HOMEBREW_TAP_TOKEN` is configured with `public_repo` scope
+3. GoReleaser installed locally for dry-run testing (`brew install goreleaser`)
+
 ## Release Checklist
 
-1. Update `CHANGELOG.md` — move Unreleased items under new version header
-2. Update version constant in `cmd/jevons/main.go`
+1. Update `CHANGELOG.md` — move Unreleased items under new version header (e.g., `## [0.1.0] - 2026-02-13`)
+2. Run `make release-dry-run` and verify all artifacts build correctly
 3. Commit: `chore(release): prepare vX.Y.Z`
 4. Tag: `git tag vX.Y.Z`
 5. Push: `git push origin main --tags`
@@ -26,6 +34,10 @@ Once `v1.0.0` is reached, standard SemVer rules apply.
    - `jevons status`
    - `jevons doctor`
 10. Update Homebrew tap formula (if applicable)
+
+## Version Injection
+
+The version is injected at build time via `ldflags` during the build process. The Makefile and GoReleaser configuration handle this automatically. There is no version constant to manually update.
 
 ## Rollback
 

@@ -44,6 +44,6 @@ brews:
     homepage: "https://github.com/giannimassi/jevons"
     description: "Local AI usage monitor and dashboard"
     test: |
-      system "#{bin}/jevons", "doctor"
+      assert_match "jevons", shell_output("#{bin}/jevons --version")
     install: |
       bin.install "jevons"
