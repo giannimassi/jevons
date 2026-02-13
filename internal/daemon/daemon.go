@@ -72,6 +72,13 @@ func (d *Daemon) Run(ctx context.Context) error {
 	// Run sync immediately
 	d.runOnce()
 
+	// If interval is 0, just block until context is cancelled (no periodic sync)
+	if d.Interval <= 0 {
+		<-ctx.Done()
+		d.cleanup()
+		return nil
+	}
+
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Second)
 	defer ticker.Stop()
 
