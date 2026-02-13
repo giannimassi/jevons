@@ -1,0 +1,5 @@
+{"type":"user","message":{"role":"user","content":"First question"},"timestamp":"2025-01-15T13:00:00.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"First answer"}],"usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":20,"cache_creation_input_tokens":10}},"timestamp":"2025-01-15T13:00:10.000Z","isApiErrorMessage":false}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Duplicate sig no human between"}],"usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":20,"cache_creation_input_tokens":10}},"timestamp":"2025-01-15T13:00:20.000Z","isApiErrorMessage":false}
+{"type":"user","message":{"role":"user","content":"Second question"},"timestamp":"2025-01-15T13:00:30.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Same sig but human spoke"}],"usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":20,"cache_creation_input_tokens":10}},"timestamp":"2025-01-15T13:00:40.000Z","isApiErrorMessage":false}

@@ -1,0 +1,4 @@
+{"type":"user","message":{"role":"user","content":"Hello, help me with Go"},"timestamp":"2025-01-15T10:29:50.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Sure, I can help with Go!"}],"usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":20,"cache_creation_input_tokens":10}},"timestamp":"2025-01-15T10:30:00.123Z","isApiErrorMessage":false}
+{"type":"user","message":{"role":"user","content":"Now write tests"},"timestamp":"2025-01-15T10:30:30.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Here are the tests."}],"usage":{"input_tokens":200,"output_tokens":150,"cache_read_input_tokens":40,"cache_creation_input_tokens":15}},"timestamp":"2025-01-15T10:31:00.456Z","isApiErrorMessage":false}

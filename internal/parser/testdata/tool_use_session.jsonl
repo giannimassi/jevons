@@ -1,0 +1,4 @@
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Read this file"}]},"timestamp":"2025-01-15T11:00:00.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tool1","name":"Read","input":{}}],"usage":{"input_tokens":300,"output_tokens":80,"cache_read_input_tokens":50,"cache_creation_input_tokens":0}},"timestamp":"2025-01-15T11:00:10.000Z","isApiErrorMessage":false}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool1","content":"file contents here"}]},"timestamp":"2025-01-15T11:00:11.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Here is the file content."}],"usage":{"input_tokens":400,"output_tokens":120,"cache_read_input_tokens":60,"cache_creation_input_tokens":5}},"timestamp":"2025-01-15T11:00:20.000Z","isApiErrorMessage":false}
