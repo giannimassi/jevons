@@ -14,10 +14,13 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
 
 archives:
   - id: default
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
@@ -31,3 +34,16 @@ changelog:
       - "^chore:"
       - "^ci:"
       - "^test:"
+
+brews:
+  - name: jevons
+    repository:
+      owner: giannimassi
+      name: homebrew-jevons
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/giannimassi/jevons"
+    description: "Local AI usage monitor and dashboard"
+    test: |
+      system "#{bin}/jevons", "doctor"
+    install: |
+      bin.install "jevons"
