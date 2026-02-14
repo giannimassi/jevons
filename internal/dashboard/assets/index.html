@@ -179,7 +179,7 @@
       border-radius: 14px;
       padding: 10px;
       display: grid;
-      grid-template-columns: repeat(8, minmax(110px, 1fr));
+      grid-template-columns: repeat(9, minmax(100px, 1fr));
       gap: 8px;
       align-items: end;
       box-shadow: 0 8px 22px rgba(18, 42, 76, 0.08);
@@ -529,6 +529,14 @@
 
       <div>
         <button id="refreshBtn">Refresh</button>
+      </div>
+
+      <div style="position:relative;">
+        <button id="exportBtn" type="button">Export &#9662;</button>
+        <div id="exportMenu" style="display:none;position:absolute;right:0;top:42px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 20px rgba(0,0,0,.18);z-index:20;min-width:100px;">
+          <button id="exportCsv" type="button" style="display:block;width:100%;text-align:left;padding:7px 12px;border:none;background:none;cursor:pointer;color:var(--ink);border-radius:4px;font-size:13px;">CSV</button>
+          <button id="exportJson" type="button" style="display:block;width:100%;text-align:left;padding:7px 12px;border:none;background:none;cursor:pointer;color:var(--ink);border-radius:4px;font-size:13px;">JSON</button>
+        </div>
       </div>
     </div>
 
@@ -1630,6 +1638,53 @@
 
   bindChartHover('mainChart');
   bindChartHover('dailyChart');
+
+  function exportData(format) {
+    const scoped = scopedEvents(state.events);
+    const ranged = filterByRange(scoped).sort((a, b) => a.ts_epoch - b.ts_epoch);
+    const scopeName = state.scope.kind === 'all' ? 'all' : state.scope.value.split('/').pop();
+    const rangeName = rangeEl.value;
+    const timestamp = new Date().toISOString().slice(0, 16).replace(/[:-]/g, '');
+    const filename = `jevons-${scopeName}-${rangeName}-${timestamp}`;
+
+    let content, mime, ext;
+    if (format === 'csv') {
+      const headers = ['ts_iso', 'project_slug', 'session_id', 'input', 'output', 'cache_read', 'cache_create', 'billable', 'total_with_cache', 'content_type'];
+      const rows = ranged.map((e) => headers.map((h) => String(e[h] ?? '').replace(/,/g, '')).join(','));
+      content = [headers.join(','), ...rows].join('\n');
+      mime = 'text/csv';
+      ext = 'csv';
+    } else {
+      content = JSON.stringify(ranged.map((e) => ({
+        ts_epoch: e.ts_epoch, ts_iso: e.ts_iso, project_slug: e.project_slug,
+        session_id: e.session_id, input: e.input, output: e.output,
+        cache_read: e.cache_read, cache_create: e.cache_create,
+        billable: e.billable, total_with_cache: e.total_with_cache,
+        content_type: e.content_type,
+      })), null, 2);
+      mime = 'application/json';
+      ext = 'json';
+    }
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const exportMenuEl = document.getElementById('exportMenu');
+  document.getElementById('exportBtn').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    exportMenuEl.style.display = exportMenuEl.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('exportCsv').addEventListener('click', () => { exportData('csv'); exportMenuEl.style.display = 'none'; });
+  document.getElementById('exportJson').addEventListener('click', () => { exportData('json'); exportMenuEl.style.display = 'none'; });
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('#exportBtn') && !ev.target.closest('#exportMenu')) exportMenuEl.style.display = 'none';
+  });
 
   const themeBtn = document.getElementById('themeBtn');
   function applyTheme(mode) {
