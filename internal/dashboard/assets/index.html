@@ -991,7 +991,7 @@
       return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
     if (bucketSec >= 3600) {
-      return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' });
+      return d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric' });
     }
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
@@ -1024,10 +1024,10 @@
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
-    const padL = 56;
+    const padL = 68;
     const padR = 14;
     const padT = 12;
-    const padB = 34;
+    const padB = 42;
 
     ctx.clearRect(0, 0, w, h);
 
@@ -1056,7 +1056,13 @@
       ctx.moveTo(padL, yy);
       ctx.lineTo(w - padR, yy);
       ctx.stroke();
+      const gridValue = max - (i * (max - min) / 4);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(fmtShort(gridValue), padL - 4, yy + 3);
     }
+    ctx.textAlign = 'left';
 
     if (effectiveViz === 'bar') {
       const bw = Math.max(2, plotW / Math.max(1, points.length) * 0.78);
@@ -1136,13 +1142,24 @@
 
     ctx.fillStyle = '#4b5563';
     ctx.font = '11px sans-serif';
-    ctx.fillText(`max ${fmtShort(max)}`, 6, padT + 8);
     const latestVal = opts.stacked ? (points[points.length - 1]?.__sum || 0) : Math.max(...(points[points.length - 1]?.__vals || [0]));
     ctx.fillText(`latest ${fmtShort(latestVal)}`, w - 165, padT + 8);
     if (points.length > 1) {
-      ctx.fillText(formatBucketLabel(points[0].epoch, opts.bucketSec), padL, h - 8);
-      ctx.fillText(formatBucketLabel(points[Math.floor(points.length / 2)].epoch, opts.bucketSec), Math.max(padL + 120, Math.floor(w / 2) - 50), h - 8);
-      ctx.fillText(formatBucketLabel(points[points.length - 1].epoch, opts.bucketSec), w - 130, h - 8);
+      const labelCount = Math.min(7, Math.max(3, points.length));
+      const step = Math.max(1, Math.floor(points.length / (labelCount - 1)));
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < points.length; i += step) {
+        const xx = x(i);
+        const label = formatBucketLabel(points[i].epoch, opts.bucketSec);
+        ctx.fillText(label, xx, h - 6);
+      }
+      const lastIdx = points.length - 1;
+      if (lastIdx % step !== 0) {
+        ctx.fillText(formatBucketLabel(points[lastIdx].epoch, opts.bucketSec), x(lastIdx), h - 6);
+      }
+      ctx.textAlign = 'left';
     }
 
     state.chartStore.set(chartId, { canvas, tip, points, opts, x, y, padL, padR, padT, padB });
@@ -1290,7 +1307,9 @@
   function renderMainChart(ranged, metric, bucketSec, viz, mode) {
     const points = bucketize(ranged, bucketSec);
     const config = chartSeries(mode, metric);
-    mainTitleEl.textContent = `Token Flow (${config.label}, ${viz}, ${bucketSec}s)`;
+    const bucketLabel = bucketSec >= 86400 ? 'daily' : bucketSec >= 3600 ? 'hourly' : bucketSec >= 60 ? `${Math.round(bucketSec/60)}min` : `${bucketSec}s`;
+    const rangeLabel = rangeEl.options[rangeEl.selectedIndex]?.text || rangeEl.value;
+    mainTitleEl.textContent = `${config.label} — ${rangeLabel} (${bucketLabel} ${viz === 'bar' ? 'bars' : viz})`;
 
     if (!points.length) {
       drawChart('mainChart', 'mainTip', [{ epoch: Math.floor(Date.now() / 1000), value: 0 }], {
@@ -1314,8 +1333,8 @@
       bucketSec,
       focusEpoch: state.focusEpoch,
     });
-    const totalLabel = config.series.map((s, i) => `${s.label}=${fmt(totals[i])}`).join(' | ');
-    mainMetaEl.textContent = `buckets=${points.length} ${totalLabel} latest=${formatBucketLabel(points[points.length - 1].epoch, bucketSec)}`;
+    const totalLabel = config.series.map((s, i) => `${s.label}: ${fmtShort(totals[i])}`).join(' | ');
+    mainMetaEl.textContent = `Total: ${totalLabel} | ${points.length} data points | Latest: ${formatBucketLabel(points[points.length - 1].epoch, bucketSec)}`;
   }
 
   function renderDailyChart(scoped) {
@@ -1348,7 +1367,7 @@
     });
 
     const total = points.reduce((a, p) => a + p.billable, 0);
-    dailyMetaEl.textContent = `days=${points.length} total_billable=${fmt(total)}`;
+    dailyMetaEl.textContent = `Total: ${fmtShort(total)} billable tokens across ${points.length} days`;
   }
 
   function renderLiveTable(rows) {
@@ -1372,7 +1391,8 @@
       `;
     }).join('');
     liveTitleEl.textContent = `Live Prompt Consumption (${liveWindowEl.value})`;
-    liveMetaEl.textContent = `rows_shown=${sorted.length} | scope=${state.scope.kind === 'all' ? 'all projects' : state.scope.value}`;
+    const scopeLabel = state.scope.kind === 'all' ? 'all projects' : state.scope.value.split('/').pop();
+    liveMetaEl.textContent = `${sorted.length} prompts shown | Scope: ${scopeLabel}`;
   }
 
   function parseFocusInput() {
