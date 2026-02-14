@@ -502,6 +502,7 @@
           <option value="cache_read">cache_read</option>
           <option value="cache_create">cache_create</option>
           <option value="total_with_cache">total_with_cache</option>
+          <option value="cost">Est. Cost ($)</option>
         </select>
       </label>
 
@@ -670,6 +671,30 @@
     if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
     return v.toLocaleString();
   }
+  const TOKEN_RATES = {
+    input: 3.00, output: 15.00, cache_read: 0.30, cache_create: 3.75,
+  }; // USD per million tokens
+
+  function estimateCost(events) {
+    let total = 0;
+    events.forEach((e) => {
+      total += (
+        (Number(e.input || 0) * TOKEN_RATES.input) +
+        (Number(e.output || 0) * TOKEN_RATES.output) +
+        (Number(e.cache_read || 0) * TOKEN_RATES.cache_read) +
+        (Number(e.cache_create || 0) * TOKEN_RATES.cache_create)
+      ) / 1_000_000;
+    });
+    return total;
+  }
+
+  function fmtCost(dollars) {
+    if (dollars < 0.01) return '<$0.01';
+    if (dollars < 1) return `$${dollars.toFixed(2)}`;
+    if (dollars < 100) return `$${dollars.toFixed(1)}`;
+    return `$${Math.round(dollars)}`;
+  }
+
   function esc(s) {
     return String(s || '')
       .replace(/&/g, '&amp;')
@@ -1076,6 +1101,13 @@
         { key: 'cache_create', label: 'cache_create', color: '#7c3aed', value: (p) => p.cache_create },
       ]};
     }
+    if (metric === 'cost') {
+      return { stacked: true, label: 'Estimated Cost ($)', series: [
+        { key: 'input_cost', label: 'input', color: '#0f766e', value: (p) => (p.input * TOKEN_RATES.input) / 1_000_000 },
+        { key: 'output_cost', label: 'output', color: '#c2410c', value: (p) => (p.output * TOKEN_RATES.output) / 1_000_000 },
+        { key: 'cache_cost', label: 'cache', color: '#1d4ed8', value: (p) => ((p.cache_read * TOKEN_RATES.cache_read) + (p.cache_create * TOKEN_RATES.cache_create)) / 1_000_000 },
+      ]};
+    }
     return { stacked: false, label: metric, series: [
       { key: metric, label: metric, color: '#c2410c', value: (p) => Number(p[metric] || 0) },
     ]};
@@ -1346,6 +1378,9 @@
     const cacheAmplification = totalBillable > 0 ? ((sum(ranged, 'cache_read') + sum(ranged, 'cache_create')) / totalBillable) : 0;
     const cacheAmplificationLabel = Number.isFinite(cacheAmplification) ? `${cacheAmplification.toFixed(1)}x` : '-';
     const burnRate30m = billable30m * 2;
+    const costRange = estimateCost(ranged);
+    const cost1h = estimateCost(inWindow(scoped, 3600));
+    const costBurnRate = estimateCost(inWindow(scoped, 1800)) * 2;
 
     const rows = [
       ['billable (range)', totalBillable],
@@ -1356,6 +1391,9 @@
       ['prompts (last 1h)', prompts1h],
       ['cache / non-cache', cacheAmplificationLabel],
       ['latest event age', latestAgeLabel],
+      ['est. cost (range)', fmtCost(costRange)],
+      ['est. cost (last 1h)', fmtCost(cost1h)],
+      ['burn rate $/hr', fmtCost(costBurnRate)],
     ];
 
     const cardValue = (v) => (typeof v === 'number' ? fmt(v) : String(v));
