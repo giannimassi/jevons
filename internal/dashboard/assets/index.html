@@ -19,6 +19,65 @@
       --ok: #0f766e;
       --bad: #b91c1c;
     }
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --bg2: #1e293b;
+      --bg3: #1a2332;
+      --ink: #e2e8f0;
+      --muted: #94a3b8;
+      --card: #1e293b;
+      --border: #334155;
+      --accent: #2dd4bf;
+      --accent2: #fb923c;
+      --accent3: #60a5fa;
+      --ok: #2dd4bf;
+      --bad: #f87171;
+    }
+    :root[data-theme="dark"] body {
+      background: linear-gradient(165deg, var(--bg) 0%, var(--bg2) 62%, var(--bg3) 100%);
+    }
+    :root[data-theme="dark"] body::before {
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    }
+    :root[data-theme="dark"] h1 {
+      background: linear-gradient(130deg, #e2e8f0 0%, #60a5fa 46%, #2dd4bf 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    :root[data-theme="dark"] .acct-btn {
+      border-color: #475569;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] input {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-color: #475569;
+    }
+    :root[data-theme="dark"] th {
+      background: #1a2332;
+      color: #94a3b8;
+    }
+    :root[data-theme="dark"] tr:nth-child(2n) {
+      background: #151f2e;
+    }
+    :root[data-theme="dark"] .scope-tree {
+      background: #151f2e;
+      border-color: #334155;
+    }
+    :root[data-theme="dark"] .scope-btn {
+      color: #e2e8f0;
+    }
+    :root[data-theme="dark"] .scope-btn:hover {
+      background: #334155;
+    }
+    :root[data-theme="dark"] .scope-btn.active {
+      background: #164e45;
+      color: #2dd4bf;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -388,9 +447,12 @@
         <h1>Claude Usage Monitor</h1>
         <div class="subtitle" id="subtitle">Live token consumption and prompt flow from Claude session logs</div>
       </div>
-      <div class="acct-wrap" id="acctWrap">
-        <button class="acct-btn" id="acctBtn">Account</button>
-        <div class="acct-box" id="acctBox"></div>
+      <div style="display:flex;gap:8px;align-items:start;">
+        <button id="themeBtn" class="acct-btn" title="Toggle theme" style="font-size:18px;padding:6px 10px;">&#9788;</button>
+        <div class="acct-wrap" id="acctWrap">
+          <button class="acct-btn" id="acctBtn">Account</button>
+          <div class="acct-box" id="acctBox"></div>
+        </div>
       </div>
     </div>
 
@@ -1048,7 +1110,8 @@
     const x = (i) => padL + (i * plotW / Math.max(1, points.length - 1));
     const y = (v) => h - padB - ((v - min) * plotH / (max - min));
 
-    ctx.strokeStyle = '#e5e7eb';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.strokeStyle = isDark ? '#334155' : '#e5e7eb';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
       const yy = padT + ((plotH * i) / 4);
@@ -1057,7 +1120,7 @@
       ctx.lineTo(w - padR, yy);
       ctx.stroke();
       const gridValue = max - (i * (max - min) / 4);
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = isDark ? '#94a3b8' : '#6b7280';
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(fmtShort(gridValue), padL - 4, yy + 3);
@@ -1140,14 +1203,14 @@
       }
     }
 
-    ctx.fillStyle = '#4b5563';
+    ctx.fillStyle = isDark ? '#94a3b8' : '#4b5563';
     ctx.font = '11px sans-serif';
     const latestVal = opts.stacked ? (points[points.length - 1]?.__sum || 0) : Math.max(...(points[points.length - 1]?.__vals || [0]));
     ctx.fillText(`latest ${fmtShort(latestVal)}`, w - 165, padT + 8);
     if (points.length > 1) {
       const labelCount = Math.min(7, Math.max(3, points.length));
       const step = Math.max(1, Math.floor(points.length / (labelCount - 1)));
-      ctx.fillStyle = '#4b5563';
+      ctx.fillStyle = isDark ? '#94a3b8' : '#4b5563';
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
       for (let i = 0; i < points.length; i += step) {
@@ -1529,6 +1592,27 @@
 
   bindChartHover('mainChart');
   bindChartHover('dailyChart');
+
+  const themeBtn = document.getElementById('themeBtn');
+  function applyTheme(mode) {
+    if (mode === 'system') {
+      const isDarkPref = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', isDarkPref ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', mode);
+    }
+    themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '\u2600' : '\u263E';
+    localStorage.setItem('jevons-theme', mode);
+  }
+  themeBtn.addEventListener('click', () => {
+    const current = localStorage.getItem('jevons-theme') || 'system';
+    const next = current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
+    applyTheme(next);
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem('jevons-theme') || 'system') === 'system') applyTheme('system');
+  });
+  applyTheme(localStorage.getItem('jevons-theme') || 'system');
 
   refresh();
   setInterval(refresh, 5000);
