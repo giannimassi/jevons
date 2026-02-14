@@ -425,6 +425,36 @@
     }
     .meta { margin-top: 8px; color: var(--muted); font-size: 12px; }
 
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+    .detail-row td {
+      padding: 8px 12px;
+      background: var(--bg2);
+      border-top: none;
+      font-size: 12px;
+    }
+    .detail-content {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+      max-width: 600px;
+    }
+    .detail-content .label { color: var(--muted); font-weight: 600; }
+    .detail-content .prompt-full {
+      grid-column: 1 / -1;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--card);
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    tr.expandable { cursor: pointer; }
+    tr.expandable:hover { background: color-mix(in srgb, var(--bg2) 60%, transparent); }
+
     @media (max-width: 1040px) {
       .toolbar { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
       .layout { grid-template-columns: 1fr; }
@@ -1482,13 +1512,13 @@
   function renderLiveTable(rows) {
     const sorted = [...rows].sort((a, b) => b.ts_epoch - a.ts_epoch).slice(0, 80);
     const bySlug = new Map(state.projects.map((p) => [p.slug, p]));
-    liveBodyEl.innerHTML = sorted.map((e) => {
+    liveBodyEl.innerHTML = sorted.map((e, idx) => {
       const p = bySlug.get(e.project_slug);
       const label = p ? projectRepo(p) : e.project_slug;
       const prompt = e.prompt_preview || '-';
       const cached = Number(e.cache_read || 0) + Number(e.cache_create || 0);
       return `
-        <tr>
+        <tr class="expandable" data-detail-idx="${idx}">
           <td>${esc(localTime(e.ts_iso || ''))}</td>
           <td>${label}</td>
           <td class="prompt" title="${esc(prompt)}">${esc(prompt)}</td>
@@ -1497,11 +1527,26 @@
           <td>${fmt(e.billable)}</td>
           <td>${fmt(cached)}</td>
         </tr>
+        <tr class="detail-row" data-detail-for="${idx}">
+          <td colspan="7">
+            <div class="detail-content">
+              <span class="label">Session</span><span>${esc(e.session_id || '-')}</span>
+              <span class="label">Timestamp</span><span>${esc(e.ts_iso || '-')}</span>
+              <span class="label">Input</span><span>${fmt(e.input)} tokens</span>
+              <span class="label">Output</span><span>${fmt(e.output)} tokens</span>
+              <span class="label">Cache Read</span><span>${fmt(e.cache_read || 0)} tokens</span>
+              <span class="label">Cache Create</span><span>${fmt(e.cache_create || 0)} tokens</span>
+              <span class="label">Billable</span><span>${fmt(e.billable)} tokens</span>
+              <span class="label">Content Type</span><span>${esc(e.content_type || '-')}</span>
+              <div class="prompt-full">${esc(prompt)}</div>
+            </div>
+          </td>
+        </tr>
       `;
     }).join('');
     liveTitleEl.textContent = `Live Prompt Consumption (${liveWindowEl.value})`;
     const scopeLabel = state.scope.kind === 'all' ? 'all projects' : state.scope.value.split('/').pop();
-    liveMetaEl.textContent = `${sorted.length} prompts shown | Scope: ${scopeLabel}`;
+    liveMetaEl.textContent = `${sorted.length} prompts shown | Scope: ${scopeLabel} | Click row for details`;
   }
 
   function parseFocusInput() {
@@ -1598,6 +1643,13 @@
   liveWindowEl.addEventListener('change', () => { parseFocusInput(); render(null); });
   focusEl.addEventListener('change', () => { parseFocusInput(); render(null); });
   scopeSearchEl.addEventListener('input', () => { render(null); });
+  liveBodyEl.addEventListener('click', (ev) => {
+    const row = ev.target.closest('tr.expandable');
+    if (!row) return;
+    const idx = row.dataset.detailIdx;
+    const detailRow = liveBodyEl.querySelector(`tr[data-detail-for="${idx}"]`);
+    if (detailRow) detailRow.classList.toggle('open');
+  });
   scopeTreeEl.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.scope-btn');
     if (!btn) return;
