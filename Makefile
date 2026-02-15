@@ -1,4 +1,4 @@
-.PHONY: help build test vet fmt clean test-shell lint-shell test-parity test-smoke test-migration test-e2e release-dry-run
+.PHONY: help build test vet fmt clean test-shell lint-shell test-parity test-smoke test-migration test-e2e release-dry-run build-app
 
 BINARY := jevons
 BUILD_DIR := bin
@@ -9,6 +9,9 @@ help: ## Show this help
 
 build: ## Build Go binary
 	go build -o $(BUILD_DIR)/$(BINARY) $(GO_MODULE)
+
+build-app: ## Build native macOS app with Wails
+	CGO_ENABLED=1 go build -tags desktop -o $(BUILD_DIR)/$(BINARY)-app $(GO_MODULE)
 
 test: ## Run Go tests
 	go test ./...
