@@ -1,4 +1,4 @@
-.PHONY: help build test vet fmt clean test-shell lint-shell test-parity test-smoke test-migration release-dry-run
+.PHONY: help build test vet fmt clean test-shell lint-shell test-parity test-smoke test-migration test-e2e release-dry-run
 
 BINARY := jevons
 BUILD_DIR := bin
@@ -57,6 +57,9 @@ test-smoke: build ## Run smoke tests against local build
 test-migration: build ## Run migration validation (requires shell script + jq)
 	@chmod +x tests/migration-test.sh
 	./tests/migration-test.sh ./bin/jevons
+
+test-e2e: build ## Run Playwright E2E tests for the dashboard
+	npx playwright test --config tests/e2e/playwright.config.ts
 
 release-dry-run: ## Run GoReleaser locally (snapshot, no publish)
 	goreleaser release --snapshot --clean --skip=publish

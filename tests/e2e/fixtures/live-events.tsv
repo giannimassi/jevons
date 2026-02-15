@@ -1,0 +1,13 @@
+ts_epoch	ts_iso	project_slug	session_id	prompt_preview	input	output	cache_read	cache_create	billable	total_with_cache	content_type	signature
+1771138543	2026-02-15T06:55:43.000Z	proj-alpha	live-sess-001	How do I fix this bug?	800	400	150	50	1200	1400	text	live-sig-001
+1771139143	2026-02-15T07:05:43.000Z	proj-beta	live-sess-002	Explain the auth flow	1600	800	300	100	2400	2800	text	live-sig-002
+1771139743	2026-02-15T07:15:43.000Z	proj-gamma	live-sess-003	Write a test for parser	2400	1200	450	150	3600	4200	text	live-sig-003
+1771140343	2026-02-15T07:25:43.000Z	proj-alpha	live-sess-004	Refactor the sync module	3200	1600	600	200	4800	5600	text	live-sig-004
+1771140943	2026-02-15T07:35:43.000Z	proj-beta	live-sess-005	Add error handling	4000	2000	750	250	6000	7000	text	live-sig-005
+1771141543	2026-02-15T07:45:43.000Z	proj-gamma	live-sess-006	Create a new endpoint	4800	2400	900	300	7200	8400	text	live-sig-006
+1771142143	2026-02-15T07:55:43.000Z	proj-alpha	live-sess-007	Review this PR	5600	2800	1050	350	8400	9800	text	live-sig-007
+1771142743	2026-02-15T08:05:43.000Z	proj-beta	live-sess-008	Debug the failing test	6400	3200	1200	400	9600	11200	text	live-sig-008
+1771143343	2026-02-15T08:15:43.000Z	proj-gamma	live-sess-009	Optimize the query	7200	3600	1350	450	10800	12600	text	live-sig-009
+1771143943	2026-02-15T08:25:43.000Z	proj-alpha	live-sess-010	Update the docs	8000	4000	1500	500	12000	14000	text	live-sig-010
+1771144543	2026-02-15T08:35:43.000Z	proj-beta	live-sess-011	Add a migration	8800	4400	1650	550	13200	15400	text	live-sig-011
+1771145143	2026-02-15T08:45:43.000Z	proj-gamma	live-sess-012	Fix the linter warnings	9600	4800	1800	600	14400	16800	text	live-sig-012

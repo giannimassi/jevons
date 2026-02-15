@@ -15,6 +15,11 @@ coverage.html
 # GoReleaser
 dist/
 
+# Node / Playwright
+node_modules/
+test-results/
+playwright-report/
+
 # OS
 .DS_Store
 Thumbs.db
